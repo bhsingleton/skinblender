@@ -1744,16 +1744,16 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
         # Prompt user for save path
         #
-        filePath, selectedFilter = QtWidgets.QFileDialog.getSaveFileName(
+        filePath, selectedFilter = QtWidgets.QFileDialog.getOpenFileName(
             self,
-            'Save Skin Weights',
+            'Load Skin Weights',
             defaultDirectory,
             'All JSON Files (*.json)'
         )
 
-        if filePath:
+        if os.path.exists(filePath):
 
-            self.skin.saveWeights(filePath)
+            qeditweightsdialog.loadSkinWeights(self.skin.object(), filePath)
             log.info('Saving skin weights to: %s' % filePath)
 
         else:

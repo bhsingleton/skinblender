@@ -1,10 +1,10 @@
 import os
 
-from PySide2 import QtCore, QtWidgets, QtGui
 from six import string_types
 from copy import deepcopy
-from more_itertools import chain
+from itertools import chain
 from scipy.spatial import cKDTree
+from PySide2 import QtCore, QtWidgets, QtGui
 
 from dcc import fnskin
 

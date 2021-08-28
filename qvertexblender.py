@@ -1414,7 +1414,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         :rtype: float
         """
 
-        return self._settings.value('editor/mirrorTolerance')
+        return self._settings.value('editor/mirrorTolerance', 1e-3)
 
     @mirrorTolerance.setter
     def mirrorTolerance(self, mirrorTolerance):
@@ -1439,8 +1439,8 @@ class QVertexBlender(qproxywindow.QProxyWindow):
             self,
             'Set Mirror Threshold',
             'Enter radius for closest point consideration:',
-            value=self.mirrorThreshold(),
-            min=1e-3,
+            self.mirrorTolerance,
+            minValue=1e-3,
             decimals=3
         )
 

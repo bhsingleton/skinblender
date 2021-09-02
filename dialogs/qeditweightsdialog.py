@@ -152,8 +152,8 @@ class QLoadWeightsDialog(QtWidgets.QDialog):
 
             log.info('Loading weights by vertex index.')
 
-            vertices = self.skin.remapWeights(self._vertices, influenceMap)
-            self.skin.applyWeights(vertices)
+            vertices = self.skin.remapVertexWeights(self._vertices, influenceMap)
+            self.skin.applyVertexWeights(vertices)
 
         elif method == 1:
 
@@ -173,8 +173,8 @@ class QLoadWeightsDialog(QtWidgets.QDialog):
 
             # Apply weights
             #
-            vertices = self.skin.remapWeights(vertices, influenceMap)
-            self.skin.applyWeights(vertices)
+            vertices = self.skin.remapVertexWeights(vertices, influenceMap)
+            self.skin.applyVertexWeights(vertices)
 
         else:
 

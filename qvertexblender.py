@@ -6,7 +6,7 @@ from PySide2 import QtCore, QtWidgets, QtGui
 from functools import partial
 from six import string_types
 
-from dcc import fnscene, fncallbacks, fnnode, fnskin
+from dcc import fnscene, fnnotify, fnnode, fnskin
 from dcc.userinterface import qproxywindow, iconutils
 
 from .dialogs import qeditinfluencesdialog, qeditweightsdialog
@@ -686,8 +686,8 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         #
         self._skin = fnskin.FnSkin()
         self._softSelection = {}
-        self._vertices = {}
         self._vertexWeights = {}
+        self._weights = {}
         self._precision = False
         self._selectShell = False
         self._slabOption = 0
@@ -1286,7 +1286,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         # Check if envelope is checked
         #
         sender = self.sender()
-        fnCallbacks = fncallbacks.FnCallbacks()
+        fnNotify = fnnotify.FnNotify()
 
         if checked:
 
@@ -1313,9 +1313,9 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
             # Add callbacks
             #
-            self._selectionChangedId = fnCallbacks.addComponentSelectionChangedCallback(self.invalidate)
-            self._undoId = fnCallbacks.addUndoCallback(self.invalidateColors)
-            self._redoId = fnCallbacks.addRedoCallback(self.invalidateColors)
+            self._selectionChangedId = fnNotify.addSelectionChangedNotify(self.invalidate)
+            self._undoId = fnNotify.addUndoNotify(self.invalidateColors)
+            self._redoId = fnNotify.addUndoNotify(self.invalidateColors)
 
             # Invalidate window
             #
@@ -1331,9 +1331,9 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
                 # Remove callbacks
                 #
-                self._selectionChangedId = fnCallbacks.removeCallback(self._selectionChangedId)
-                self._undoId = fnCallbacks.removeCallback(self._undoId)
-                self._redoId = fnCallbacks.removeCallback(self._redoId)
+                self._selectionChangedId = fnNotify.removeNotify(self._selectionChangedId)
+                self._undoId = fnNotify.removeNotify(self._undoId)
+                self._redoId = fnNotify.removeNotify(self._redoId)
 
                 # Reset object
                 #
@@ -1635,23 +1635,23 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
         # Store selected weights
         #
-        self._vertices = self.skin.weights(*selection)
+        self._vertexWeights = self.skin.vertexWeights(*selection)
 
         if selectionCount == 0:
 
-            self._vertexWeights = {}
+            self._weights = {}
 
         elif selectionCount == 1:
 
-            self._vertexWeights = self._vertices[selection[0]]
+            self._weights = self._vertexWeights[selection[0]]
 
         if selectionCount > 1:
 
-            self._vertexWeights = self.skin.averageWeights(*list(self._vertices.values()), maintainMaxInfluences=False)
+            self._weights = self.skin.averageWeights(*list(self._vertexWeights.values()), maintainMaxInfluences=False)
 
         # Check if there any values
         #
-        numWeights = len(self._vertexWeights)
+        numWeights = len(self._weights)
 
         if numWeights > 0:
 
@@ -1664,12 +1664,12 @@ class QVertexBlender(qproxywindow.QProxyWindow):
                 index = self.weightModel.index(i, 1)
                 item = self.weightModel.itemFromIndex(index)
 
-                weight = self._vertexWeights.get(i, 0.0)
+                weight = self._weights.get(i, 0.0)
                 item.setText('%s' % round(weight, 3))
 
             # Invalidate filter model
             #
-            influenceIds = self._vertexWeights.keys()
+            influenceIds = self._weights.keys()
             self.weightFilterModel.setVisible(*influenceIds)
 
         else:
@@ -1895,7 +1895,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
         # Update active selection
         #
-        selection = self.skin.getVerticesByInfluenceId(selectedRows)
+        selection = self.skin.getVerticesByInfluenceId(*selectedRows)
         self.skin.setSelection(selection)
 
     @validate
@@ -2006,7 +2006,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         for (vertexIndex, falloff) in self._softSelection.items():
 
             updates[vertexIndex] = self.skin.setWeights(
-                self._vertices[vertexIndex],
+                self._vertexWeights[vertexIndex],
                 activeInfluence,
                 sourceInfluences,
                 amount,
@@ -2015,7 +2015,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
         # Assign updates to skin
         #
-        self.skin.applyWeights(updates)
+        self.skin.applyVertexWeights(updates)
         self.invalidateWeights()
 
     @validate
@@ -2039,7 +2039,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         for (vertexIndex, falloff) in self._softSelection.items():
 
             updates[vertexIndex] = self.skin.setWeights(
-                self._vertices[vertexIndex],
+                self._vertexWeights[vertexIndex],
                 activeInfluence,
                 sourceInfluences,
                 amount,
@@ -2048,7 +2048,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
         # Assign updates to skin
         #
-        self.skin.applyWeights(updates)
+        self.skin.applyVertexWeights(updates)
         self.invalidateWeights()
 
     @validate
@@ -2077,7 +2077,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         for (vertexIndex, falloff) in self._softSelection.items():
 
             updates[vertexIndex] = self.skin.incrementWeights(
-                self._vertices[vertexIndex],
+                self._vertexWeights[vertexIndex],
                 activeInfluence,
                 sourceInfluences,
                 amount,
@@ -2086,7 +2086,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
         # Assign updates to skin
         #
-        self.skin.applyWeights(updates)
+        self.skin.applyVertexWeights(updates)
         self.invalidateWeights()
 
     @validate
@@ -2110,12 +2110,12 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
         # Iterate through selection
         #
-        updates = {}
+        vertexWeights = {}
 
         for (vertexIndex, falloff) in self._softSelection.items():
 
-            updates[vertexIndex] = self.skin.scaleWeights(
-                self._vertices[vertexIndex],
+            vertexWeights[vertexIndex] = self.skin.scaleWeights(
+                self._vertexWeights[vertexIndex],
                 activeInfluence,
                 sourceInfluences,
                 percent,
@@ -2124,7 +2124,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
         # Assign updates to skin
         #
-        self.skin.applyWeights(updates)
+        self.skin.applyVertexWeights(vertexWeights)
         self.invalidateWeights()
 
     @validate
@@ -2136,18 +2136,27 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         :rtype: bool
         """
 
-        # Get debug option before mirroring
+        # Mirror vertex weights
         #
-        resetActiveSelection = self.resetInfluencesAction.isChecked()
-        selection = self.skin.selection()
-
-        self.skin.mirrorVertices(
-            selection,
+        vertexWeights = self.skin.mirrorVertexWeights(
+            list(self._vertexWeights.keys()),
             pull=pull,
-            resetActiveSelection=resetActiveSelection
+            axis=self.mirrorAxis
         )
 
-        self.invalidateWeights()
+        self.skin.applyVertexWeights(vertexWeights)
+
+        # Check if active selection should be reset
+        #
+        resetActiveSelection = self.resetInfluencesAction.isChecked()
+
+        if resetActiveSelection:
+
+            self.skin.setSelection(list(vertexWeights.keys()))
+
+        else:
+
+            self.invalidateWeights()
 
     @validate
     def slabPasteWeights(self):

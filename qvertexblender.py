@@ -1,14 +1,13 @@
 import os
-import fnmatch
 import webbrowser
 
 from PySide2 import QtCore, QtWidgets, QtGui
 from functools import partial
-from six import string_types
 
 from dcc import fnscene, fnnotify, fnnode, fnskin
 from dcc.userinterface import qproxywindow, iconutils
 
+from . import qinfluenceview, qinfluencefiltermodel
 from .dialogs import qeditinfluencesdialog, qeditweightsdialog
 
 import logging
@@ -19,18 +18,16 @@ log.setLevel(logging.INFO)
 
 def validate(func):
     """
-    Method wrapper used to validate the internal skin weights variable before calling the passed function.
-    :param func: Python function to be called after validation.
-    :return: See passed function for details.
+    Returns a wrapper that validates functions against the UI before executes.
+    This will help reduce the amount of conditions needed when we're not in edit mode.
+
+    :type func: function
+    :rtype: function
     """
 
-    # Define wrapper function
-    #
     def wrapper(*args, **kwargs):
 
-        # Check if skin deformer is valid
-        #
-        window = args[0]
+        window = args[0]  # type: QVertexBlender
 
         if window.skin.isValid():
 
@@ -41,627 +38,6 @@ def validate(func):
             return
 
     return wrapper
-
-
-class QInfluenceFilterModel(QtCore.QSortFilterProxyModel):
-    """
-    Overload of QSortFilterProxyModel used to filter out influence names.
-    """
-
-    __pending__ = False
-
-    def __init__(self, *args, **kwargs):
-        """
-        Overloaded method called after a new instance has been created.
-        """
-
-        # Call parent method
-        #
-        super(QInfluenceFilterModel, self).__init__(*args, **kwargs)
-
-        # Declare class variables
-        #
-        self._siblingModel = None
-        self._visible = []
-        self._selectedRows = []
-        self._overrides = []
-        self._autoSelect = True
-        self._activeInfluences = []
-        self._inactiveInfluences = []
-
-    def filterAcceptsRow(self, row, parent):
-        """
-        Overloaded method used to dynamically hide/show rows based on the return value.
-
-        :type row: int
-        :type parent: QtCore.QModelIndex
-        :rtype: bool
-        """
-
-        # Check if row contains null data
-        #
-        index = self.sourceModel().index(row, 0, parent)
-
-        if self.isItemNull(index):
-
-            log.debug('%s contains null data.' % row)
-            self._inactiveInfluences.append(row)
-
-            return False
-
-        # Check if row should be visible
-        #
-        acceptsRow = False
-
-        if row in self._visible or row in self._selectedRows:
-
-            # Append item to active influences
-            #
-            self._activeInfluences.append(row)
-            acceptsRow = True
-
-        elif row in self._overrides:
-
-            self._activeInfluences.append(row)
-            self._overrides.remove(row)
-
-            acceptsRow = True
-
-        else:
-
-            log.debug('%s is marked as hidden.' % row)
-            self._inactiveInfluences.append(row)
-
-        return acceptsRow
-
-    def invalidateFilter(self):
-        """
-        Overloaded method used to clear influence lists before filtering any rows.
-
-        :rtype: None
-        """
-
-        # Reset private lists
-        #
-        self._activeInfluences = []
-        self._inactiveInfluences = []
-
-        # Call inherited method
-        #
-        super(QInfluenceFilterModel, self).invalidateFilter()
-
-    def sourceWidget(self):
-        """
-        Property method used to return the associated widget with this filter model.
-        There is a bug in Maya 2017 related to the overloaded "parent" method.
-        Super must be invoked to circumvent this issue.
-
-        :rtype: QtWidgets.QAbstractItemView
-        """
-
-        return super(QtCore.QAbstractItemModel, self.sourceModel()).parent()
-
-    def siblingModel(self):
-        """
-        Method used to retrieve the sibling model used for matching selections.
-
-        :rtype: InfluenceFilterProxyModel
-        """
-
-        return self._siblingModel
-
-    def setSiblingModel(self, model):
-        """
-        Method used to update the sibling model that is responsible for syncing selections.
-
-        :type model: InfluenceFilterProxyModel
-        :rtype: None
-        """
-
-        # Check value type
-        #
-        if not isinstance(model, QtCore.QSortFilterProxyModel):
-
-            raise TypeError('setSiblingModel() expects QSortFilterProxyModel (%s given)!' % type(model).__name__)
-
-        # Assign private property
-        #
-        self._siblingModel = model
-
-    def autoSelect(self):
-        """
-        Method used to check if auto select is enabled.
-
-        :rtype: bool
-        """
-
-        return self._autoSelect
-
-    def setAutoSelect(self, autoSelect):
-        """
-        Setter method with keyword arguments to control invalidation.
-
-        :type autoSelect: bool
-        :rtype: None
-        """
-
-        # Check value type
-        #
-        if not isinstance(autoSelect, bool):
-
-            raise TypeError('setAutoSelect() expects a bool (%s given)!' % type(autoSelect).__name__)
-
-        # Assign private property
-        #
-        self._autoSelect = autoSelect
-
-        # Sync selections
-        #
-        if self._autoSelect:
-
-            self.matchSelection()
-
-    def visible(self):
-        """
-        Retrieves a list of indices that should be visible when filtering.
-
-        :rtype: list[int]
-        """
-
-        return self._visible
-
-    @property
-    def numVisible(self):
-        """
-        Getter method used to determine the number of visible items.
-
-        :rtype: int
-        """
-
-        return len(self._visible)
-
-    def setVisible(self, *args, **kwargs):
-        """
-        Setter method used to set the protected list value.
-
-        :type args: tuple[int]
-        :type kwargs: dict
-        :rtype: None
-        """
-
-        # Check argument types
-        #
-        if not all([isinstance(x, int) for x in args]):
-
-            raise TypeError('setVisible() expects a sequence of integers!')
-
-        # Reset private variables
-        #
-        self._visible = args
-        self.invalidateFilter()
-
-    def selectedRows(self):
-        """
-        Retrieves a list of rows that should be selected.
-
-        :rtype: list[int]
-        """
-
-        return self._selectedRows
-
-    def setSelectedRows(self, selectedRows):
-        """
-        Updates the list of rows that should be selected.
-        This method emits no signals and is purely for optimization purposes.
-
-        :rtype: list[int]
-        """
-
-        self._selectedRows = list(selectedRows)
-
-    def overrides(self):
-        """
-        Retrieves a list of overrides that can bypass filtering.
-        These items are gradually removed by the "filterAcceptsRow" method.
-
-        :rtype: list[int]
-        """
-
-        return self._overrides
-
-    def setOverrides(self, *args):
-        """
-        Setter method used to retrieve the current overrides for this model.
-
-        :type args: tuple[int]
-        :rtype: None
-        """
-
-        # Check argument types
-        #
-        if not all([isinstance(x, int) for x in args]):
-
-            raise TypeError('setOverrides() expects a sequence of integers!')
-
-        # Reset private variables
-        #
-        self._overrides = list(args)
-        self.invalidateFilter()
-
-    @property
-    def activeInfluences(self):
-        """
-        Getter method used to access the active influence list.
-
-        :rtype: list[int]
-        """
-
-        return self._activeInfluences
-
-    @property
-    def numActiveInfluences(self):
-        """
-        Getter method used to determine the number of active influences.
-
-        :rtype: int
-        """
-
-        return len(self._activeInfluences)
-
-    @property
-    def inactiveInfluences(self):
-        """
-        Getter method used to retrieve the inactive influences.
-
-        :rtype: list[int]
-        """
-
-        return self._inactiveInfluences
-
-    @property
-    def numInactiveInfluences(self):
-        """
-        Getter method used to retrieve the number of inactive influences.
-
-        :rtype: int
-        """
-
-        return len(self._inactiveInfluences)
-
-    @classmethod
-    def beginSelectionUpdate(cls):
-        """
-        Changes the filter state to prevent cyclical errors.
-
-        :rtype: None
-        """
-
-        cls.__pending__ = True
-
-    @classmethod
-    def endSelectionUpdate(cls):
-        """
-        Changes the filter state to prevent cyclical errors.
-
-        :rtype: None
-        """
-
-        cls.__pending__ = False
-
-    def matchSelection(self):
-        """
-        Attempts to match the selections between the two sibling models.
-
-        :rtype: None
-        """
-
-        # Check if there's already a pending operation
-        #
-        if self.isPending():
-
-            return
-
-        # Sync selections by blocking other tasks
-        #
-        self.beginSelectionUpdate()
-        self.siblingModel().selectInfluences(self._selectedRows)
-        self.endSelectionUpdate()
-
-    @classmethod
-    def isPending(cls):
-        """
-        Class method used to determine if this model is currently matching selections.
-
-        :rtype: bool
-        """
-
-        return cls.__pending__
-
-    def isItemNull(self, index):
-        """
-        Checks if the supplied row contains any data.
-
-        :type index: QtCore.QModelIndex
-        :rtype: bool
-        """
-
-        # Check if index is valid
-        #
-        if index.isValid():
-
-            return not self.sourceModel().itemFromIndex(index).text()
-
-        else:
-
-            return True
-
-    def isRowHidden(self, row):
-        """
-        Checks if the supplied row is hidden.
-
-        :type row: int
-        :rtype: bool
-        """
-
-        return row in self._inactiveInfluences
-
-    def isRowSelected(self, row, column=0):
-        """
-        Method used to check if the supplied row index is selected.
-
-        :type row: int
-        :type column: int
-        :rtype: bool
-        """
-
-        # Check value type
-        #
-        if not isinstance(row, int):
-
-            raise TypeError('isRowSelected() expects a int (%s given)!' % row)
-
-        # Get selection model
-        #
-        sourceModel = self.sourceModel()
-        selectionModel = super(QtCore.QAbstractItemModel, sourceModel).parent().selectionModel()
-
-        # Define model index
-        #
-        index = sourceModel.index(row, column)
-        index = self.mapFromSource(index)
-
-        return selectionModel.isSelected(index)
-
-    def getRowsByText(self, texts, column=0):
-        """
-        Gets the row associated with the supplied text.
-
-        :type texts: list[str]
-        :type column: int
-        :rtype: list[int]
-        """
-
-        # Check value types
-        #
-        if isinstance(texts, (list, tuple, set)):
-
-            # Get associate model and iterate through items
-            #
-            sourceModel = self.sourceModel()
-            rows = []
-
-            for text in texts:
-
-                items = sourceModel.findItems(text, column=column)
-                rows = rows + [x.row() for x in items]
-
-            log.debug('Got %s row indices from %s names.' % (rows, texts))
-            return rows
-
-        elif isinstance(texts, string_types):
-
-            return self.getRowsByText([texts], column=0)
-
-        else:
-
-            return []
-
-    def selectInfluences(self, rows):
-        """
-        Selects the supplied row indices.
-
-        :type rows: list[int]
-        :rtype: None
-        """
-
-        # Check value type
-        #
-        if not all([isinstance(x, int) for x in rows]):
-
-            raise TypeError('selectInfluences() expects a sequence of integers!')
-
-        # Get source and selection model
-        #
-        sourceModel = self.sourceModel()
-        selectionModel = super(QtCore.QAbstractItemModel, sourceModel).parent().selectionModel()
-
-        # Collect all valid row indices
-        #
-        numRows = len(rows)
-        numColumns = sourceModel.columnCount()
-
-        # Un-hide any rows that may be hidden
-        #
-        hidden = [x for x in rows if self.isRowHidden(x)]
-        numHidden = len(hidden)
-
-        if numHidden > 0:
-
-            self.setOverrides(*hidden)
-
-        # Check if any rows have been supplied
-        #
-        log.debug('Attempting to select %s...' % rows)
-
-        if numRows > 0:
-
-            # Iterate through rows and build item selection
-            #
-            itemSelection = QtCore.QItemSelection()
-
-            for row in rows:
-
-                # Remap indices using source model
-                #
-                topLeft = sourceModel.index(row, 0)
-                bottomRight = sourceModel.index(row, numColumns - 1)
-
-                selection = QtCore.QItemSelection(topLeft, bottomRight)
-                itemSelection.merge(selection, QtCore.QItemSelectionModel.Select)
-
-            # Map selection to filter model
-            #
-            itemSelection = self.mapSelectionFromSource(itemSelection)
-            selectionModel.select(itemSelection, QtCore.QItemSelectionModel.ClearAndSelect)
-
-            # Scroll to last row
-            #
-            index = sourceModel.index(rows[0], 0)
-            index = self.mapFromSource(index)
-
-            self.sourceWidget().scrollTo(index)
-
-        else:
-
-            # Check if there are any active influences
-            #
-            if self.numActiveInfluences > 0:
-
-                # Get first influence
-                #
-                activeInfluence = self._activeInfluences[0]
-
-                # Define model index
-                #
-                topLeft = sourceModel.index(activeInfluence, 0)
-                bottomRight = sourceModel.index(activeInfluence, numColumns - 1)
-
-                itemSelection = QtCore.QItemSelection(topLeft, bottomRight)
-                itemSelection = self.mapSelectionFromSource(itemSelection)
-
-                # Select index and scroll to top
-                #
-                selectionModel.select(itemSelection, QtCore.QItemSelectionModel.ClearAndSelect)
-                self.sourceWidget().scrollToTop()
-
-            else:
-
-                log.debug('Unable to perform selection change request.')
-
-    def getSelectedRows(self):
-        """
-        Gets the selected row indices from the source widget.
-
-        :rtype: list[int]
-        """
-
-        # Get the selection model
-        #
-        selectionModel = self.sourceWidget().selectionModel()
-
-        # Map selection model to the filter model
-        #
-        selection = selectionModel.selection()
-        selection = self.mapSelectionToSource(selection)
-
-        # Create unique list of rows
-        #
-        indices = selection.indexes()
-        selectedRows = set([x.row() for x in indices])
-
-        return list(selectedRows)
-
-    def getSelectedItems(self, column=0):
-        """
-        Gets the selected items based on the specified column.
-        By default this is set to 0 since we're more concerned with influence names.
-
-        :param column: Forces the operation to query a different column.
-        :type column: int
-        :rtype: list[str]
-        """
-
-        # Get corresponding text value from row indices
-        #
-        sourceModel = self.sourceModel()
-        rows = self.getSelectedRows()
-
-        return [sourceModel.item(x, column).text() for x in rows]
-
-    def filterRowsByPattern(self, pattern, column=0):
-        """
-        Method used to generate a filtered list of row items based on a supplied pattern.
-
-        :type pattern: str
-        :type column: int
-        :rtype: list(int)
-        """
-
-        # Check value type
-        #
-        if not isinstance(pattern, string_types):
-
-            raise ValueError('Unable to filter rows using %s type!' % type(pattern).__name__)
-
-        # Get text values from source model
-        #
-        sourceModel = self.sourceModel()
-        rows = range(sourceModel.rowCount())
-
-        # Compose list using match pattern
-        #
-        items = [sourceModel.item(row, column).text() for row in rows]
-        filtered = [row for row, item in zip(rows, items) if fnmatch.fnmatch(item, pattern)]
-
-        return filtered
-
-    def onSelectionChanged(self, selected, deselected):
-        """
-        Slot method called whenever the active selection changes.
-
-        :type selected: QItemSelection
-        :type deselected: QItemSelection
-        :rtype: None
-        """
-
-        # Inspect selected indices
-        #
-        rows = self.getSelectedRows()
-        numRows = len(rows)
-
-        if numRows == 0:
-
-            log.debug('Current source model contains no rows.')
-            return
-
-        # Store selection change
-        #
-        self.setSelectedRows(rows)
-        self.invalidateFilter()
-
-        # Check if precision mode is enabled
-        #
-        if self._autoSelect:
-
-            self.matchSelection()
-
-        else:
-
-            log.debug('Selection update is not required.')
-
-        # Force connection change
-        #
-        QVertexBlender.getInstance().requestInfluenceChange()
 
 
 class QVertexBlender(qproxywindow.QProxyWindow):
@@ -685,6 +61,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         # Declare private variables
         #
         self._skin = fnskin.FnSkin()
+        self._currentInfluence = None
         self._softSelection = {}
         self._vertexWeights = {}
         self._weights = {}
@@ -824,10 +201,6 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         self.setMirrorToleranceAction = QtWidgets.QAction('Set Mirror Threshold', self.settingsMenu)
         self.setMirrorToleranceAction.triggered.connect(self.changeMirrorTolerance)
 
-        self.colorRampAction = QtWidgets.QAction('Use Color Ramp', self.settingsMenu)
-        self.colorRampAction.setCheckable(True)
-        self.colorRampAction.setChecked(True)
-
         self.menuBar().addMenu(self.settingsMenu)
         self.settingsMenu.addAction(self.mirrorAxisSeparator)
         self.settingsMenu.addAction(self.xAction)
@@ -835,8 +208,6 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         self.settingsMenu.addAction(self.zAction)
         self.settingsMenu.addSection('Mirror Tolerance')
         self.settingsMenu.addAction(self.setMirrorToleranceAction)
-        self.settingsMenu.addSection('Vertex Weight Display')
-        self.settingsMenu.addAction(self.colorRampAction)
 
         # Create debug menu
         #
@@ -905,11 +276,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         self.influenceGrpBox.setMinimumWidth(130)
         self.influenceGrpBox.setLayout(self.influenceLayout)
 
-        self.influenceTable = QtWidgets.QTableView()
-        self.influenceTable.setShowGrid(True)
-        self.influenceTable.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
-        self.influenceTable.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
-        self.influenceTable.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        self.influenceTable = qinfluenceview.QInfluenceView()
         self.influenceTable.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.influenceTable.horizontalHeader().setStretchLastSection(True)
         self.influenceTable.verticalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Fixed)
@@ -917,11 +284,11 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         self.influenceModel = QtGui.QStandardItemModel(0, 1, parent=self.influenceTable)
         self.influenceModel.setHorizontalHeaderLabels(['Influences'])
 
-        self.influenceFilterModel = QInfluenceFilterModel()
+        self.influenceFilterModel = qinfluencefiltermodel.QInfluenceFilterModel(parent=self.influenceTable)
         self.influenceFilterModel.setSourceModel(self.influenceModel)
-
         self.influenceTable.setModel(self.influenceFilterModel)
-        self.influenceTable.selectionModel().selectionChanged.connect(self.influenceFilterModel.onSelectionChanged)
+
+        self.influenceTable.selectionModel().selectionChanged.connect(self.currentInfluenceChanged)
 
         self.searchBox = QtWidgets.QLineEdit('')
         self.searchBox.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
@@ -970,12 +337,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         self.weightGrpBox = QtWidgets.QGroupBox('Weights:')
         self.weightGrpBox.setLayout(self.weightLayout)
 
-        self.weightTable = QtWidgets.QTableView()
-        self.weightTable.setShowGrid(True)
-        self.weightTable.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
-        self.weightTable.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
-        self.weightTable.verticalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Fixed)
-        self.weightTable.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        self.weightTable = qinfluenceview.QInfluenceView()
         self.weightTable.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.weightTable.doubleClicked.connect(self.onDoubleClick)
         self.weightTable.customContextMenuRequested.connect(self.requestCustomContextMenu)
@@ -983,21 +345,19 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         self.weightModel = QtGui.QStandardItemModel(0, 2, parent=self.weightTable)
         self.weightModel.setHorizontalHeaderLabels(['Joint', 'Weight'])
 
-        self.weightFilterModel = QInfluenceFilterModel()
+        self.weightFilterModel = qinfluencefiltermodel.QInfluenceFilterModel(parent=self.weightTable)
         self.weightFilterModel.setSourceModel(self.weightModel)
-
         self.weightTable.setModel(self.weightFilterModel)
-        self.weightTable.selectionModel().selectionChanged.connect(self.weightFilterModel.onSelectionChanged)
 
         self.weightTable.setColumnWidth(1, 64)
         self.weightTable.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.Fixed)
         self.weightTable.horizontalHeader().setStretchLastSection(False)
         self.weightTable.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
 
-        # Define sibling relationship between tables
+        # Define sibling relationship
         #
-        self.influenceFilterModel.setSiblingModel(self.weightFilterModel)
-        self.weightFilterModel.setSiblingModel(self.influenceFilterModel)
+        self.influenceTable.setSibling(self.weightTable)
+        self.weightTable.setSibling(self.influenceTable)
 
         # Create popup menu widget
         #
@@ -1034,10 +394,10 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         self.mirrorLayout = QtWidgets.QHBoxLayout()
 
         self.mirrorButton = QtWidgets.QPushButton('Mirror')
-        #self.mirrorButton.clicked.connect(partial(self.mirrorWeights, False))
+        self.mirrorButton.clicked.connect(partial(self.mirrorWeights, False))
 
         self.pullButton = QtWidgets.QPushButton('Pull')
-        #self.pullButton.clicked.connect(partial(self.mirrorWeights, True))
+        self.pullButton.clicked.connect(partial(self.mirrorWeights, True))
 
         self.mirrorLayout.addWidget(self.mirrorButton)
         self.mirrorLayout.addWidget(self.pullButton)
@@ -1049,7 +409,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         # Create slab paste widgets
         #
         self.slabButton = QtWidgets.QPushButton('Slab')
-        #self.slabButton.clicked.connect(self.slabPasteWeights)
+        self.slabButton.clicked.connect(self.slabPasteWeights)
 
         self.slabOptions = QtWidgets.QPushButton()
         self.slabOptions.setFixedWidth(18)
@@ -1064,7 +424,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
         self.slabGroup = QtWidgets.QActionGroup(self.slabButton)
         self.slabGroup.setExclusive(True)
-        #self.slabGroup.triggered.connect(self.slabOptionChanged)
+        self.slabGroup.triggered.connect(self.slabOptionChanged)
 
         self.closestPointAction = self.slabMenu.addAction('&Closest Point')
         self.closestPointAction.setCheckable(True)
@@ -1313,14 +673,20 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
             # Add callbacks
             #
-            self._selectionChangedId = fnNotify.addSelectionChangedNotify(self.invalidate)
+            self._selectionChangedId = fnNotify.addSelectionChangedNotify(self.activeSelectionChanged)
             self._undoId = fnNotify.addUndoNotify(self.invalidateColors)
-            self._redoId = fnNotify.addUndoNotify(self.invalidateColors)
+            self._redoId = fnNotify.addRedoNotify(self.invalidateColors)
+
+            # Enable vertex colour display
+            #
+            self.skin.showColors()
 
             # Invalidate window
             #
             self.invalidateInfluences()
             self.invalidateWeights()
+            self.invalidateColors()
+            self.influenceTable.selectFirstRow()
 
         else:
 
@@ -1337,6 +703,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
                 # Reset object
                 #
+                self.skin.hideColors()
                 self.skin.resetObject()
 
     @property
@@ -1372,8 +739,8 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
             # Disable auto select
             #
-            self.influenceFilterModel.setAutoSelect(False)
-            self.weightFilterModel.setAutoSelect(False)
+            self.influenceTable.setAutoSelect(False)
+            self.weightTable.setAutoSelect(False)
 
         else:
 
@@ -1383,8 +750,8 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
             # Enable auto select
             #
-            self.influenceFilterModel.setAutoSelect(True)
-            self.weightFilterModel.setAutoSelect(True)
+            self.influenceTable.setAutoSelect(True)
+            self.weightTable.setAutoSelect(True)
 
     @property
     def selectShell(self):
@@ -1485,24 +852,49 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         visible = self.influenceFilterModel.filterRowsByPattern(self.search)
         self.influenceFilterModel.setVisible(*visible)
 
-    def activeInfluence(self):
+    @validate
+    def activeSelectionChanged(self):
+        """
+        Callback method called whenever the active selection is changed.
+
+        :rtype: None
+        """
+
+        self.invalidateWeights()
+        self.invalidateColors()
+
+    def currentInfluenceChanged(self, selected, deselected):
+        """
+        Slot method called whenever the current influence is changed.
+
+        :type selected: QtCore.QItemSelection
+        :type deselected: QtCore.QItemSelection
+        :rtype: None
+        """
+
+        # Get selected rows from table
+        #
+        rows = self.influenceTable.selectedRows()
+        numRows = len(rows)
+
+        if numRows == 1:
+
+            # Update current influence
+            #
+            self._currentInfluence = rows[0]
+
+            # Select influence and redraw
+            #
+            self.skin.selectInfluence(self._currentInfluence)
+            self.invalidateColors()
+
+    def currentInfluence(self):
         """
         Property method for getting the active influence.
         :rtype: int
         """
 
-        # Check active selection
-        #
-        selectedRows = self.influenceFilterModel.selectedRows()
-        numSelected = len(selectedRows)
-
-        if numSelected > 0:
-
-            return selectedRows[0]
-
-        else:
-
-            raise TypeError('Unable to get active influence from current selection!')
+        return self._currentInfluence
 
     def sourceInfluences(self):
         """
@@ -1513,12 +905,12 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
         # Get selected rows
         #
-        selectedRows = self.weightFilterModel.selectedRows()
+        selectedRows = self.weightTable.selectedRows()
         numSelected = len(selectedRows)
 
         if numSelected == 0:
 
-            raise TypeError('sourceInfluences() expects a valid selection!')
+            raise TypeError('sourceInfluences() expects at least 1 selected influence!')
 
         # Check if tool is in lazy mode
         #
@@ -1529,11 +921,11 @@ class QVertexBlender(qproxywindow.QProxyWindow):
             # Remove target influence if in source
             #
             influenceIds = selectedRows
-            activeInfluence = self.activeInfluence()
+            currentInfluence = self.currentInfluence()
 
-            if activeInfluence in influenceIds:
+            if currentInfluence in influenceIds:
 
-                influenceIds.remove(activeInfluence)
+                influenceIds.remove(currentInfluence)
 
         else:
 
@@ -1543,17 +935,6 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         #
         log.debug('Source Influences: %s' % influenceIds)
         return influenceIds
-
-    @validate
-    def invalidate(self, *args, **kwargs):
-        """
-        Invalidates the data currently displayed to user.
-
-        :rtype: None
-        """
-
-        self.invalidateWeights()
-        self.invalidateColors()
 
     @validate
     def invalidateInfluences(self):
@@ -1617,7 +998,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         # Invalidate influence table
         #
         self.influenceFilterModel.setVisible(*influenceIds)
-        self.influenceFilterModel.selectInfluences([0])
+        self.influenceTable.selectFirstRow()
 
     @validate
     def invalidateWeights(self, *args, **kwargs):
@@ -1684,7 +1065,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         :rtype: None
         """
 
-        pass
+        self.skin.invalidateColors()
 
     @validate
     def requestInfluenceChange(self):
@@ -1695,7 +1076,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         :rtype: None
         """
 
-        self.skin.selectInfluence(self.activeInfluence())
+        self.skin.selectInfluence(self.currentInfluence())
 
     @validate
     def saveWeights(self):
@@ -1891,7 +1272,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
         # Get selected rows
         #
-        selectedRows = self.weightFilterModel.getSelectedRows()
+        selectedRows = self.weightTable.selectedRows()
 
         # Update active selection
         #
@@ -1939,7 +1320,9 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         """
 
         self.skin.pasteWeights()
+
         self.invalidateWeights()
+        self.invalidateColors()
 
     @validate
     def pasteAverageWeights(self):
@@ -1950,7 +1333,9 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         """
 
         self.skin.pasteAveragedWeights()
+
         self.invalidateWeights()
+        self.invalidateColors()
 
     @validate
     def blendVertices(self):
@@ -1961,7 +1346,9 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         """
 
         self.skin.blendVertices()
+
         self.invalidateWeights()
+        self.invalidateColors()
 
     @validate
     def blendBetweenVertices(self):
@@ -1972,7 +1359,9 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         """
 
         self.skin.blendBetweenVertices(blendByDistance=self.blendByDistanceAction.isChecked())
+
         self.invalidateWeights()
+        self.invalidateColors()
 
     @validate
     def blendBetweenTwoVertices(self):
@@ -1983,7 +1372,9 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         """
 
         self.skin.blendBetweenTwoVertices(blendByDistance=self.blendByDistanceAction.isChecked())
+
         self.invalidateWeights()
+        self.invalidateColors()
 
     @validate
     def applyPreset(self, amount):
@@ -1996,7 +1387,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
         # Get setter arguments
         #
-        activeInfluence = self.activeInfluence()
+        currentInfluence = self.currentInfluence()
         sourceInfluences = self.sourceInfluences()
 
         # Iterate through selection
@@ -2007,7 +1398,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
             updates[vertexIndex] = self.skin.setWeights(
                 self._vertexWeights[vertexIndex],
-                activeInfluence,
+                currentInfluence,
                 sourceInfluences,
                 amount,
                 falloff=falloff
@@ -2016,7 +1407,9 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         # Assign updates to skin
         #
         self.skin.applyVertexWeights(updates)
+
         self.invalidateWeights()
+        self.invalidateColors()
 
     @validate
     def setWeights(self):
@@ -2028,7 +1421,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
         # Get setter arguments
         #
-        activeInfluence = self.activeInfluence()
+        currentInfluence = self.currentInfluence()
         sourceInfluences = self.sourceInfluences()
         amount = self.setterSpinBox.value()
 
@@ -2040,7 +1433,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
             updates[vertexIndex] = self.skin.setWeights(
                 self._vertexWeights[vertexIndex],
-                activeInfluence,
+                currentInfluence,
                 sourceInfluences,
                 amount,
                 falloff=falloff
@@ -2049,7 +1442,9 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         # Assign updates to skin
         #
         self.skin.applyVertexWeights(updates)
+
         self.invalidateWeights()
+        self.invalidateColors()
 
     @validate
     def incrementWeights(self, pull):
@@ -2062,7 +1457,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
         # Get increment arguments
         #
-        activeInfluence = self.activeInfluence()
+        currentInfluence = self.currentInfluence()
         sourceInfluences = self.sourceInfluences()
         amount = self.incrementSpinBox.value()
 
@@ -2078,7 +1473,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
             updates[vertexIndex] = self.skin.incrementWeights(
                 self._vertexWeights[vertexIndex],
-                activeInfluence,
+                currentInfluence,
                 sourceInfluences,
                 amount,
                 falloff=falloff
@@ -2087,7 +1482,9 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         # Assign updates to skin
         #
         self.skin.applyVertexWeights(updates)
+
         self.invalidateWeights()
+        self.invalidateColors()
 
     @validate
     def scaleWeights(self, pull):
@@ -2100,7 +1497,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
         # Get scale arguments
         #
-        activeInfluence = self.activeInfluence()
+        currentInfluence = self.currentInfluence()
         sourceInfluences = self.sourceInfluences()
         percent = self.scaleSpinBox.value()
 
@@ -2116,7 +1513,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
             vertexWeights[vertexIndex] = self.skin.scaleWeights(
                 self._vertexWeights[vertexIndex],
-                activeInfluence,
+                currentInfluence,
                 sourceInfluences,
                 percent,
                 falloff=falloff
@@ -2125,7 +1522,9 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         # Assign updates to skin
         #
         self.skin.applyVertexWeights(vertexWeights)
+
         self.invalidateWeights()
+        self.invalidateColors()
 
     @validate
     def mirrorWeights(self, pull):
@@ -2154,9 +1553,10 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
             self.skin.setSelection(list(vertexWeights.keys()))
 
-        else:
-
-            self.invalidateWeights()
+        # Invalidate user interface
+        #
+        self.invalidateWeights()
+        self.invalidateColors()
 
     @validate
     def slabPasteWeights(self):
@@ -2170,7 +1570,9 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         # Get slab option before pasting
         #
         self.skin.slabPasteWeights(slabOption=self.slabOption)
+
         self.invalidateWeights()
+        self.invalidateColors()
 
     def requestHelp(self):
         """

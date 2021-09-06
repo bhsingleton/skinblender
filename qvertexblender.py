@@ -66,6 +66,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         self._vertexWeights = {}
         self._weights = {}
         self._precision = False
+        self._blendByDistance = False
         self._selectShell = False
         self._slabOption = 0
         self._search = ''
@@ -142,11 +143,9 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         self.blendBetweenVerticesAction = QtWidgets.QAction('&Blend Between Vertices', self.editMenu)
         self.blendBetweenVerticesAction.triggered.connect(self.blendBetweenVertices)
 
-        self.blendBetweenTwoVerticesAction = QtWidgets.QAction('&Blend Between Two Vertices', self.editMenu)
-        self.blendBetweenTwoVerticesAction.triggered.connect(self.blendBetweenTwoVertices)
-
         self.blendByDistanceAction = QtWidgets.QAction('&Blend By Distance', self.editMenu)
         self.blendByDistanceAction.setCheckable(True)
+        self.blendByDistanceAction.triggered.connect(self.blendByDistanceChanged)
 
         self.seatSkinAction = QtWidgets.QAction('&Reset Intermediate Object', self.editMenu)
         self.seatSkinAction.triggered.connect(self.resetIntermediateObject)
@@ -164,7 +163,6 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         self.editMenu.addSection('Vertex Weight Blending')
         self.editMenu.addAction(self.blendVerticesAction)
         self.editMenu.addAction(self.blendBetweenVerticesAction)
-        self.editMenu.addAction(self.blendBetweenTwoVerticesAction)
         self.editMenu.addAction(self.blendByDistanceAction)
 
         self.editMenu.addSection('Modify Skin Cluster')
@@ -339,7 +337,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
         self.weightTable = qinfluenceview.QInfluenceView()
         self.weightTable.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        self.weightTable.doubleClicked.connect(self.onDoubleClick)
+        self.weightTable.doubleClicked.connect(self.doubleClicked)
         self.weightTable.customContextMenuRequested.connect(self.requestCustomContextMenu)
 
         self.weightModel = QtGui.QStandardItemModel(0, 2, parent=self.weightTable)
@@ -754,6 +752,26 @@ class QVertexBlender(qproxywindow.QProxyWindow):
             self.weightTable.setAutoSelect(True)
 
     @property
+    def blendByDistance(self):
+        """
+        Getter method that returns the blend by distance flag.
+
+        :rtype: bool
+        """
+
+        return self._blendByDistance
+
+    def blendByDistanceChanged(self, blendByDistance):
+        """
+        Slot method called whenever the blend by distance check box is changed.
+
+        :type blendByDistance: bool
+        :rtype: None
+        """
+
+        self._blendByDistance = blendByDistance
+
+    @property
     def selectShell(self):
         """
         Getter method that returns a flag that indicates if shells should be selected.
@@ -851,6 +869,42 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
         visible = self.influenceFilterModel.filterRowsByPattern(self.search)
         self.influenceFilterModel.setVisible(*visible)
+
+    def vertexWeights(self):
+        """
+        Returns the vertex weights from the active selection.
+
+        :rtype: dict[int:dict[int:float]]
+        """
+
+        return self._vertexWeights
+
+    def weights(self):
+        """
+        Returns the averaged vertex weights from the active selection.
+
+        :rtype: dict[int:float]
+        """
+
+        return self._weights
+
+    def selection(self):
+        """
+        Returns the vertex indices from the active selection.
+
+        :rtype: list[int]
+        """
+
+        return list(self._softSelection.keys())
+
+    def softSelection(self):
+        """
+        Returns the soft values from the active selection.
+
+        :rtype: dict[int:float]
+        """
+
+        return self._softSelection
 
     @validate
     def activeSelectionChanged(self):
@@ -1199,7 +1253,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
             return self.popupMenu.exec_(self.weightTable.mapToGlobal(point))
 
-    def onDoubleClick(self, index):
+    def doubleClicked(self, index):
         """
         Selects the text value from the opposite table.
 
@@ -1221,7 +1275,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
         # Select row with text
         #
-        self.influenceFilterModel.selectInfluences([row])
+        self.influenceTable.selectRow(row)
 
     @property
     def mirrorAxis(self):
@@ -1345,7 +1399,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         :rtype: None
         """
 
-        self.skin.blendVertices()
+        self.skin.blendVertices(self.selection())
 
         self.invalidateWeights()
         self.invalidateColors()
@@ -1358,20 +1412,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         :rtype: None
         """
 
-        self.skin.blendBetweenVertices(blendByDistance=self.blendByDistanceAction.isChecked())
-
-        self.invalidateWeights()
-        self.invalidateColors()
-
-    @validate
-    def blendBetweenTwoVertices(self):
-        """
-        Blends the skin weights between two vertices using the shortest path.
-
-        :rtype: None
-        """
-
-        self.skin.blendBetweenTwoVertices(blendByDistance=self.blendByDistanceAction.isChecked())
+        self.skin.blendBetweenVertices(self.selection(), blendByDistance=self.blendByDistance)
 
         self.invalidateWeights()
         self.invalidateColors()

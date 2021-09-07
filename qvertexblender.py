@@ -1579,9 +1579,10 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         # Mirror vertex weights
         #
         vertexWeights = self.skin.mirrorVertexWeights(
-            list(self._vertexWeights.keys()),
+            self.selection(),
             pull=pull,
-            axis=self.mirrorAxis
+            axis=self.mirrorAxis,
+            tolerance=self.mirrorTolerance
         )
 
         self.skin.applyVertexWeights(vertexWeights)
@@ -1610,7 +1611,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
         # Get slab option before pasting
         #
-        self.skin.slabPasteWeights(slabOption=self.slabOption)
+        self.skin.slabPasteWeights(self.selection(), mode=self.slabOption)
 
         self.invalidateWeights()
         self.invalidateColors()

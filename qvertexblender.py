@@ -799,7 +799,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         :rtype: float
         """
 
-        return self._settings.value('editor/mirrorTolerance', 1e-3)
+        return float(self._settings.value('editor/mirrorTolerance', 1e-3))
 
     @mirrorTolerance.setter
     def mirrorTolerance(self, mirrorTolerance):

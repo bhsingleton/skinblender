@@ -55,9 +55,10 @@ class QInfluenceFilterModel(QtCore.QSortFilterProxyModel):
 
         # Check if row should be visible
         #
+        selectedRows = self.parent().selectedRows()
         acceptsRow = False
 
-        if row in self._visible:
+        if row in self._visible or row in selectedRows:
 
             # Append item to active influences
             #

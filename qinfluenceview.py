@@ -163,6 +163,16 @@ class QInfluenceView(QtWidgets.QTableView):
 
         return self._selectedRows
 
+    def selectRow(self, row):
+        """
+        Selects the specified row.
+
+        :type row: int
+        :rtype: None
+        """
+
+        self.selectRows([row])
+
     def selectRows(self, rows):
         """
         Selects the supplied rows.
@@ -221,7 +231,22 @@ class QInfluenceView(QtWidgets.QTableView):
 
         if numRows > 0:
 
-            pass
+            # Create index from row
+            #
+            index = None
+
+            if isinstance(model, QtCore.QAbstractProxyModel):
+
+                index = model.sourceModel().index(rows[0], 0)
+                index = model.mapFromSource(index)
+
+            else:
+
+                index = model.index(rows[0], 0)
+
+            # Scroll to index
+            #
+            self.scrollTo(index, QtWidgets.QAbstractItemView.PositionAtCenter)
 
         else:
 

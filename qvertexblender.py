@@ -1426,13 +1426,11 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         :rtype: None
         """
 
-        # Get setter arguments
+        # Iterate through selection
         #
         currentInfluence = self.currentInfluence()
         sourceInfluences = self.sourceInfluences()
 
-        # Iterate through selection
-        #
         updates = {}
 
         for (vertexIndex, falloff) in self._softSelection.items():
@@ -1460,14 +1458,12 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         :rtype: None
         """
 
-        # Get setter arguments
+        # Iterate through selection
         #
         currentInfluence = self.currentInfluence()
         sourceInfluences = self.sourceInfluences()
         amount = self.setterSpinBox.value()
 
-        # Iterate through selection
-        #
         updates = {}
 
         for (vertexIndex, falloff) in self._softSelection.items():

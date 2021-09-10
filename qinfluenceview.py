@@ -267,16 +267,16 @@ class QInfluenceView(QtWidgets.QTableView):
 
         # Get selected rows
         #
-        indices = selected.indexes()
+        indices = selected.indexes()  # This returns both row and column indices!
         model = self.model()
 
         if isinstance(model, QtCore.QAbstractProxyModel):
 
-            self._selectedRows = [model.mapToSource(x).row() for x in indices]
+            self._selectedRows = [model.mapToSource(x).row() for x in indices if x.column() == 0]
 
         else:
 
-            self._selectedRows = [x.row() for x in indices]
+            self._selectedRows = [x.row() for x in indices if x.column() == 0]
 
         # Force the sibling to match selections
         # Be sure to check if a sync is pending to avoid cycle checks!

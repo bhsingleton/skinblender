@@ -751,6 +751,10 @@ class QVertexBlender(qproxywindow.QProxyWindow):
             self.influenceTable.setAutoSelect(True)
             self.weightTable.setAutoSelect(True)
 
+            # Force synchronize
+            #
+            self.influenceTable.synchronize()
+
     @property
     def blendByDistance(self):
         """

@@ -136,6 +136,21 @@ class QInfluenceView(QtWidgets.QTableView):
 
             return False
 
+    def synchronize(self):
+        """
+        Forces the sibling to synchronize with this view.
+
+        :rtype: None
+        """
+
+        if self.hasSibling():
+
+            self.beginSelectionUpdate()
+            self.sibling().selectRows(self._selectedRows)
+            self.endSelectionUpdate()
+
+            self.synchronized.emit()
+
     def firstRow(self):
         """
         Returns the first visible row.
@@ -283,8 +298,4 @@ class QInfluenceView(QtWidgets.QTableView):
         #
         if self.autoSelect() and (self.hasSibling() and not self.isSiblingPending()):
 
-            self.beginSelectionUpdate()
-            self.sibling().selectRows(self._selectedRows)
-            self.endSelectionUpdate()
-
-            self.synchronized.emit()
+            self.synchronize()

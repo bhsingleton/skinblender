@@ -761,15 +761,15 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
         return self._blendByDistance
 
-    def blendByDistanceChanged(self, blendByDistance):
+    def blendByDistanceChanged(self, checked=False):
         """
         Slot method called whenever the blend by distance check box is changed.
 
-        :type blendByDistance: bool
+        :type checked: bool
         :rtype: None
         """
 
-        self._blendByDistance = blendByDistance
+        self._blendByDistance = self.sender().isChecked()
 
     @property
     def selectShell(self):

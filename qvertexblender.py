@@ -147,11 +147,11 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         self.blendByDistanceAction.setCheckable(True)
         self.blendByDistanceAction.triggered.connect(self.blendByDistanceChanged)
 
-        self.seatSkinAction = QtWidgets.QAction('&Reset Intermediate Object', self.editMenu)
-        self.seatSkinAction.triggered.connect(self.resetIntermediateObject)
+        self.resetIntermediateObjectAction = QtWidgets.QAction('&Reset Intermediate Object', self.editMenu)
+        self.resetIntermediateObjectAction.triggered.connect(self.resetIntermediateObject)
 
-        self.resetInfluencesAction = QtWidgets.QAction('&Reset Bind-Pre Matrices', self.editMenu)
-        self.resetInfluencesAction.triggered.connect(self.resetBindPreMatrices)
+        self.self.resetPreBindMatricesAction = QtWidgets.QAction('&Reset Pre-Bind Matrices', self.editMenu)
+        self.self.resetPreBindMatricesAction.triggered.connect(self.resetBindPreMatrices)
 
         self.menuBar().addMenu(self.editMenu)
 
@@ -166,8 +166,8 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         self.editMenu.addAction(self.blendByDistanceAction)
 
         self.editMenu.addSection('Modify Skin Cluster')
-        self.editMenu.addAction(self.seatSkinAction)
-        self.editMenu.addAction(self.resetInfluencesAction)
+        self.editMenu.addAction(self.resetIntermediateObjectAction)
+        self.editMenu.addAction(self.self.resetPreBindMatricesAction)
 
         # Create settings menu
         #
@@ -214,11 +214,11 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         self.debugMenu.setTearOffEnabled(True)
         self.debugMenu.setWindowTitle('Debug')
 
-        self.resetInfluencesAction = QtWidgets.QAction('&Reset Active Selection', self.editMenu)
-        self.resetInfluencesAction.setCheckable(True)
+        self.self.resetPreBindMatricesAction = QtWidgets.QAction('&Reset Active Selection', self.editMenu)
+        self.self.resetPreBindMatricesAction.setCheckable(True)
 
         self.menuBar().addMenu(self.debugMenu)
-        self.debugMenu.addAction(self.resetInfluencesAction)
+        self.debugMenu.addAction(self.self.resetPreBindMatricesAction)
 
         # Create help menu
         #
@@ -1219,7 +1219,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
         if reply == QtWidgets.QMessageBox.Yes:
 
-            pass
+            self.resetIntermediateObject()
 
     @validate
     def resetBindPreMatrices(self):
@@ -1241,7 +1241,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
         if reply == QtWidgets.QMessageBox.Yes:
 
-            pass
+            self.skin.resetPreBindMatrices()
 
     def requestCustomContextMenu(self, point):
         """
@@ -1589,7 +1589,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
         # Check if active selection should be reset
         #
-        resetActiveSelection = self.resetInfluencesAction.isChecked()
+        resetActiveSelection = self.self.resetPreBindMatricesAction.isChecked()
 
         if resetActiveSelection:
 

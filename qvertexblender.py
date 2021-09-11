@@ -150,8 +150,8 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         self.resetIntermediateObjectAction = QtWidgets.QAction('&Reset Intermediate Object', self.editMenu)
         self.resetIntermediateObjectAction.triggered.connect(self.resetIntermediateObject)
 
-        self.self.resetPreBindMatricesAction = QtWidgets.QAction('&Reset Pre-Bind Matrices', self.editMenu)
-        self.self.resetPreBindMatricesAction.triggered.connect(self.resetBindPreMatrices)
+        self.resetPreBindMatricesAction = QtWidgets.QAction('&Reset Pre-Bind Matrices', self.editMenu)
+        self.resetPreBindMatricesAction.triggered.connect(self.resetBindPreMatrices)
 
         self.menuBar().addMenu(self.editMenu)
 
@@ -167,7 +167,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
         self.editMenu.addSection('Modify Skin Cluster')
         self.editMenu.addAction(self.resetIntermediateObjectAction)
-        self.editMenu.addAction(self.self.resetPreBindMatricesAction)
+        self.editMenu.addAction(self.resetPreBindMatricesAction)
 
         # Create settings menu
         #
@@ -214,11 +214,11 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         self.debugMenu.setTearOffEnabled(True)
         self.debugMenu.setWindowTitle('Debug')
 
-        self.self.resetPreBindMatricesAction = QtWidgets.QAction('&Reset Active Selection', self.editMenu)
-        self.self.resetPreBindMatricesAction.setCheckable(True)
+        self.resetPreBindMatricesAction = QtWidgets.QAction('&Reset Active Selection', self.editMenu)
+        self.resetPreBindMatricesAction.setCheckable(True)
 
         self.menuBar().addMenu(self.debugMenu)
-        self.debugMenu.addAction(self.self.resetPreBindMatricesAction)
+        self.debugMenu.addAction(self.resetPreBindMatricesAction)
 
         # Create help menu
         #
@@ -1589,7 +1589,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
         # Check if active selection should be reset
         #
-        resetActiveSelection = self.self.resetPreBindMatricesAction.isChecked()
+        resetActiveSelection = self.resetPreBindMatricesAction.isChecked()
 
         if resetActiveSelection:
 

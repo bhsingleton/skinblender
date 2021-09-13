@@ -6,7 +6,7 @@ from itertools import chain
 from scipy.spatial import cKDTree
 from PySide2 import QtCore, QtWidgets, QtGui
 
-from dcc import fnskin
+from dcc import fnskin, fnnode
 
 import logging
 logging.basicConfig()
@@ -40,7 +40,8 @@ class QLoadWeightsDialog(QtWidgets.QDialog):
         self._skin = fnskin.FnSkin()
         self._filePath = ''
         self._maxInfluences = None
-        self._influences = None
+        self._incomingInfluences = None
+        self._currentInfluences = None
         self._influenceMap = None
         self._vertices = None
         self._points = None
@@ -211,15 +212,21 @@ class QLoadWeightsDialog(QtWidgets.QDialog):
         :rtype: None
         """
 
-        # Check if value type
+        # Update function set object
         #
-        if not self._skin.acceptsObject(skin):
+        success = self._skin.trySetObject(skin)
 
-            raise TypeError('skinCluster.setter() expects a valid object (%s given)!' % type(skin).__name__)
+        if not success:
 
-        # Set private variable and repopulate combo box
+            return
+
+        # Get current influences
         #
-        self._skin.setObject(skin)
+        self._currentInfluences = {influenceId: influenceName for (influenceId, influenceName) in self._skin.influenceNames().items()}
+        self._influenceMap = dict(enumerate(self._currentInfluences.keys()))
+
+        # Invalidate user interface
+        #
         self.invalidate()
 
     @property
@@ -246,14 +253,19 @@ class QLoadWeightsDialog(QtWidgets.QDialog):
         self._filePath = filePath
 
         # Load weights from file
+        # Be aware that json does not support numerical keys
+        # So we have to cast all numerical keys to integers
         #
         state = self.skin.loadWeights(filePath)
 
-        self._maxInfluences = state['maxInfluences']
-        self._influences = state['influences']
-        self._influenceMap = {x: y for (x, y) in enumerate(self._influences.keys())}
-        self._vertices = state['vertices']
+        self._maxInfluences = int(state['maxInfluences'])
+        self._incomingInfluences = {int(influenceId): influenceName for (influenceId, influenceName) in state['influences'].items()}
+        self._vertices = {int(vertexIndex): {int(influenceId): weight for (influenceId, weight) in weights.items()} for (vertexIndex, weights) in state['vertices'].items()}
         self._points = state['points']
+
+        # Invalidate user interface
+        #
+        self.invalidate()
 
     def selectedMethod(self):
         """
@@ -292,7 +304,7 @@ class QLoadWeightsDialog(QtWidgets.QDialog):
         # Iterate through influences
         #
         usedInfluenceIds = set(chain(*[vertexWeights.keys() for vertexWeights in self._vertices.values()]))
-        maxInfluenceId = max(self._influences.keys())
+        maxInfluenceId = max(self._incomingInfluences.keys())
         maxRowCount = maxInfluenceId + 1
 
         self.influenceTable.setRowCount(maxRowCount)
@@ -301,13 +313,13 @@ class QLoadWeightsDialog(QtWidgets.QDialog):
 
             # Create weighted influence item
             #
-            influenceName = self._influences.get(influenceId, '')
+            influenceName = self._incomingInfluences.get(influenceId, '')
             tableItem = QtWidgets.QTableWidgetItem(influenceName)
 
             # Create remap combo box
             #
             comboBox = QtWidgets.QComboBox()
-            comboBox.addItems(list(self._influences.values()))
+            comboBox.addItems(list(self._currentInfluences.values()))
 
             # Assign items to table
             #
@@ -345,6 +357,7 @@ class QLoadWeightsDialog(QtWidgets.QDialog):
             # Check if row is hidden
             #
             if self.influenceTable.isRowHidden(row):
+
                 log.debug('Skipping row index: %s' % row)
                 continue
 
@@ -379,14 +392,15 @@ class QLoadWeightsDialog(QtWidgets.QDialog):
         numRows = self.influenceTable.rowCount()
 
         for i in range(numRows):
+
             comboBox = self.influenceTable.cellWidget(i, 1)
 
             currentIndex = comboBox.currentIndex()
-            influenceMap[i] = comboBox.influenceMap[currentIndex]
+            influenceMap[i] = self._influenceMap[currentIndex]
 
         # Return influence map
         #
-        log.debug('Created %s influence binder.' % influenceMap)
+        log.debug('Created influence map: %s' % influenceMap)
         return influenceMap
 
 
@@ -411,4 +425,4 @@ def loadSkinWeights(skin, filePath):
 
     else:
 
-        raise TypeError('loadSkinWeights() expects a skin and file path (%s and %s given)!' % (type(args[0]).__name__, type(args[1]).__name__,))
+        raise TypeError('loadSkinWeights() expects a skin and file path (%s and %s given)!' % (type(skin).__name__, type(filePath).__name__,))

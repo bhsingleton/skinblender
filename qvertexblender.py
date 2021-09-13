@@ -1136,7 +1136,6 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
         self.skin.selectInfluence(self.currentInfluence())
 
-    @validate
     def saveWeights(self):
         """
         Saves the skin weights from the active selection.
@@ -1144,31 +1143,91 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         :rtype: None
         """
 
-        # Get default directory
+        # Evaluate active selection
         #
+        selection = fnskin.FnSkin.getActiveSelection()
+        selectionCount = len(selection)
+
         fnScene = fnscene.FnScene()
-        shapeName = fnnode.FnNode(self.skin.shape()).name()
-        defaultFilePath = os.path.join(fnScene.currentDirectory(), '{name}.json'.format(name=shapeName))
+        fnSkin = fnskin.FnSkin()
 
-        filePath, selectedFilter = QtWidgets.QFileDialog.getSaveFileName(
-            self,
-            'Save Skin Weights',
-            defaultFilePath,
-            'All JSON Files (*.json)'
-        )
+        if selectionCount == 0:
 
-        # Check if a file was specified
-        #
-        if len(filePath) > 0:
+            log.warning('Invalid selection!')
+            return
 
-            log.info('Saving skin weights to: %s' % filePath)
-            self.skin.saveWeights(filePath)
+        elif selectionCount == 1:
+
+            # Concatenate default file path
+            #
+            directory = fnScene.currentDirectory()
+            shapeName = fnnode.FnNode(self.skin.shape()).name()
+
+            defaultFilePath = os.path.join(directory, '{name}.json'.format(name=shapeName))
+
+            # Prompt user for save path
+            #
+            filePath, selectedFilter = QtWidgets.QFileDialog.getSaveFileName(
+                self,
+                'Save Skin Weights',
+                defaultFilePath,
+                'All JSON Files (*.json)'
+            )
+
+            # Check if a file was specified
+            #
+            if len(filePath) == 0:
+
+                log.info('Operation aborted...')
+                return
+
+            # Try and save weights
+            #
+            success = fnSkin.trySetObject(selection[0])
+
+            if success:
+
+                log.info('Saving weights to: %s' % filePath)
+                fnSkin.saveWeights(filePath)
 
         else:
 
-            log.info('Operation aborted...')
+            # Prompt user for save path
+            #
+            defaultDirectory = fnScene.currentDirectory()
 
-    @validate
+            directory = QtWidgets.QFileDialog.getExistingDirectory(
+                self,
+                'Save Skin Weights',
+                defaultDirectory,
+                QtWidgets.QFileDialog.ShowDirsOnly
+            )
+
+            if not os.path.exists(directory):
+
+                log.info('Operation aborted...')
+                return
+
+            # Iterate through selected nodes
+            #
+            for obj in selection:
+
+                # Try and initialize function set
+                #
+                success = fnSkin.trySetObject(obj)
+
+                if not success:
+
+                    continue
+
+                # Save weights to directory
+                #
+                shapeName = fnnode.FnNode(fnSkin.shape()).name()
+                filePath = os.path.join(directory, '{name}.json'.format(name=shapeName))
+
+                log.info('Saving weights to: %s' % filePath)
+                fnSkin.saveWeights(filePath)
+
     def loadWeights(self):
         """
         Loads skin weights onto the active selection.
@@ -1176,24 +1235,34 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         :rtype: None
         """
 
-        # Get default directory
+        # Evaluate active selection
+        #
+        selection = fnskin.FnSkin.getActiveSelection()
+        selectionCount = len(selection)
+
+        if selectionCount != 1:
+
+            log.warning('Invalid selection!')
+            return
+
+        # Prompt user for file path
         #
         fnScene = fnscene.FnScene()
         defaultDirectory = fnScene.currentDirectory()
 
-        # Prompt user for save path
-        #
         filePath, selectedFilter = QtWidgets.QFileDialog.getOpenFileName(
             self,
-            'Load Skin Weights',
+            'Load Weights',
             defaultDirectory,
-            'All JSON Files (*.json)'
+            r'All JSON Files (*.json)'
         )
 
+        # Check if a file was specified
+        #
         if os.path.exists(filePath):
 
-            qeditweightsdialog.loadSkinWeights(self.skin.object(), filePath)
-            log.info('Saving skin weights to: %s' % filePath)
+            log.info('Loading weights from: %s' % filePath)
+            qeditweightsdialog.loadSkinWeights(selection[0], filePath)
 
         else:
 

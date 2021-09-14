@@ -3,7 +3,6 @@ import webbrowser
 
 from PySide2 import QtCore, QtWidgets, QtGui
 from functools import partial
-
 from dcc import fnscene, fnnotify, fnnode, fnskin
 from dcc.userinterface import qproxywindow, iconutils
 
@@ -106,7 +105,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
         # Create file menu
         #
-        self.fileMenu = QtWidgets.QMenu('&File', parent=self.menuBar())
+        self.fileMenu = QtWidgets.QMenu('&File', self.menuBar())
         self.fileMenu.setSeparatorsCollapsible(False)
         self.fileMenu.setTearOffEnabled(True)
         self.fileMenu.setWindowTitle('File')
@@ -123,7 +122,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
         # Create edit menu
         #
-        self.editMenu = QtWidgets.QMenu('&Edit', parent=self.menuBar())
+        self.editMenu = QtWidgets.QMenu('&Edit', self.menuBar())
         self.editMenu.setSeparatorsCollapsible(False)
         self.editMenu.setTearOffEnabled(True)
         self.editMenu.setWindowTitle('Edit')
@@ -171,7 +170,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
         # Create settings menu
         #
-        self.settingsMenu = QtWidgets.QMenu('&Settings', parent=self.menuBar())
+        self.settingsMenu = QtWidgets.QMenu('&Settings', self.menuBar())
         self.settingsMenu.setSeparatorsCollapsible(False)
         self.settingsMenu.setTearOffEnabled(True)
         self.settingsMenu.setWindowTitle('Settings')
@@ -222,7 +221,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
         # Create help menu
         #
-        self.helpMenu = QtWidgets.QMenu('&Help', parent=self.menuBar())
+        self.helpMenu = QtWidgets.QMenu('&Help', self.menuBar())
         self.helpMenu.setSeparatorsCollapsible(False)
         self.helpMenu.setTearOffEnabled(True)
         self.helpMenu.setWindowTitle('Help')
@@ -918,8 +917,13 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         :rtype: None
         """
 
-        self.invalidateWeights()
-        self.invalidateColors()
+        # Check if skin is selected
+        # If not then we don't need to invalidate
+        #
+        if self.skin.isSelected():
+
+            self.invalidateWeights()
+            self.invalidateColors()
 
     def currentInfluenceChanged(self, selected, deselected):
         """

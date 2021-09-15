@@ -617,6 +617,26 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         #
         return super(QVertexBlender, self).closeEvent(event)
 
+    @classmethod
+    def createStandardItem(cls, text, height=16):
+        """
+        Class method used to create a QStandardItem from the given string value.
+
+        :type text: str
+        :type height: int
+        :rtype: QtGui.QStandardItem
+        """
+
+        # Create item and resize based on text width
+        #
+        item = QtGui.QStandardItem(text)
+        textWidth = cls.getTextWidth(item, text)
+
+        item.setSizeHint(QtCore.QSize(textWidth, height))
+        item.setTextAlignment(QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter)
+
+        return item
+
     @property
     def skin(self):
         """

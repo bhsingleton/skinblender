@@ -76,12 +76,6 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         self._redoId = None
         self._settings = QtCore.QSettings('Ben Singleton', 'Vertex Blender')
 
-        # Declare public variables
-        #
-        self.clipboard = None
-        self.previousInfluences = []
-        self.previousWeights = []
-
     def __build__(self):
         """
         Private method used to build the user interface.
@@ -89,13 +83,14 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         :rtype: None
         """
 
-        # Define window properties
+        # Call parent method
+        #
+        super(QVertexBlender, self).__build__()
+
+        # Edit window properties
         #
         self.setWindowTitle('|| Vertex Blender')
         self.setMinimumSize(QtCore.QSize(385, 555))
-
-        # Create central widget
-        #
         self.setCentralWidget(QtWidgets.QWidget())
         self.centralWidget().setLayout(QtWidgets.QVBoxLayout())
 
@@ -133,8 +128,8 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         self.pasteWeightsAction = QtWidgets.QAction('&Paste Weights', self.editMenu)
         self.pasteWeightsAction.triggered.connect(self.pasteWeights)
 
-        self.pasteAverageWeightsAction = QtWidgets.QAction('&Paste Average Weights', self.editMenu)
-        self.pasteAverageWeightsAction.triggered.connect(self.pasteAverageWeights)
+        self.pasteAveragedWeightsAction = QtWidgets.QAction('&Paste Average Weights', self.editMenu)
+        self.pasteAveragedWeightsAction.triggered.connect(self.pasteAveragedWeights)
 
         self.blendVerticesAction = QtWidgets.QAction('&Blend Vertices', self.editMenu)
         self.blendVerticesAction.triggered.connect(self.blendVertices)
@@ -157,7 +152,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         self.editMenu.addSection('Copy/Paste Weights')
         self.editMenu.addAction(self.copyWeightsAction)
         self.editMenu.addAction(self.pasteWeightsAction)
-        self.editMenu.addAction(self.pasteAverageWeightsAction)
+        self.editMenu.addAction(self.pasteAveragedWeightsAction)
 
         self.editMenu.addSection('Vertex Weight Blending')
         self.editMenu.addAction(self.blendVerticesAction)
@@ -1476,7 +1471,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         self.invalidateColors()
 
     @validate
-    def pasteAverageWeights(self):
+    def pasteAveragedWeights(self):
         """
         Pastes averaged weights from the clipboard to the active selection.
 

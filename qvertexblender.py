@@ -935,7 +935,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         # Check if skin is selected
         # If not then we don't need to invalidate
         #
-        if self.skin.isSelected():
+        if self.skin.isPartiallySelected():
 
             self.invalidateWeights()
             self.invalidateColors()
@@ -1424,6 +1424,9 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         #
         selection = self.skin.getVerticesByInfluenceId(*selectedRows)
         self.skin.setSelection(selection)
+
+        self.invalidateWeights()
+        self.invalidateColors()
 
     @validate
     def addInfluences(self):

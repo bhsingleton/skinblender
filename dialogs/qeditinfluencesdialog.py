@@ -1,6 +1,7 @@
+import fnmatch
+
 from PySide2 import QtCore, QtWidgets, QtGui
 from abc import abstractmethod
-
 from dcc import fnskin, fnnode
 from dcc.userinterface import iconutils
 
@@ -8,6 +9,49 @@ import logging
 logging.basicConfig()
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
+
+
+class QInfluenceFilterModel(QtCore.QSortFilterProxyModel):
+    """
+    Overload of QSortFilterProxyModel used to filter influences.
+    """
+
+    def __init__(self, pattern, **kwargs):
+        """
+        Private method called after a new instance has been created.
+
+        :type pattern: str
+        :keyword parent: QtCore.QObject
+        :rtype: None
+        """
+
+        # Call parent method
+        #
+        super(QInfluenceFilterModel, self).__init__(**kwargs)
+
+        # Store filter pattern
+        #
+        self.pattern = pattern
+
+    def filterAcceptsRow(self, row, parent):
+        """
+        Queries whether or not the supplied row should be filtered.
+
+        :type row: int
+        :type parent: QtCore.QModelIndex
+        :rtype: bool
+        """
+
+        index = self.sourceModel().index(row, 0, parent)
+
+        if index.isValid():
+
+            text = self.sourceModel().itemFromIndex(index).text()
+            return not fnmatch.fnmatch(text, self.pattern)
+
+        else:
+
+            return False
 
 
 class QEditInfluencesDialog(QtWidgets.QDialog):
@@ -33,6 +77,7 @@ class QEditInfluencesDialog(QtWidgets.QDialog):
         #
         self._skin = fnskin.FnSkin()
         self._root = fnnode.FnNode()
+        self._ignore = kwargs.get('ignore', '_*')
 
         # Call build method
         #
@@ -66,9 +111,6 @@ class QEditInfluencesDialog(QtWidgets.QDialog):
 
         # Create influence table widget
         #
-        self.influenceItemModel = QtGui.QStandardItemModel(0, 1)
-        self.influenceItemModel.setHorizontalHeaderLabels(['Joint'])
-
         self.influenceTreeView = QtWidgets.QTreeView()
         self.influenceTreeView.setEditTriggers(QtWidgets.QTreeView.NoEditTriggers)
         self.influenceTreeView.setAlternatingRowColors(True)
@@ -80,7 +122,13 @@ class QEditInfluencesDialog(QtWidgets.QDialog):
         self.influenceTreeView.expanded.connect(self.influenceExpanded)
         self.influenceTreeView.collapsed.connect(self.influenceExpanded)
 
-        self.influenceTreeView.setModel(self.influenceItemModel)
+        self.influenceItemModel = QtGui.QStandardItemModel(0, 1, parent=self.influenceTreeView)
+        self.influenceItemModel.setHorizontalHeaderLabels(['Joint'])
+
+        self.influenceFilterModel = QInfluenceFilterModel(self._ignore, parent=self.influenceTreeView)
+        self.influenceFilterModel.setSourceModel(self.influenceItemModel)
+        self.influenceTreeView.setModel(self.influenceFilterModel)
+
         self.influenceTreeView.header().setStretchLastSection(True)
         self.influenceTreeView.header().setDefaultAlignment(QtCore.Qt.AlignCenter)
 
@@ -143,6 +191,16 @@ class QEditInfluencesDialog(QtWidgets.QDialog):
         """
 
         return self._root
+
+    @property
+    def ignore(self):
+        """
+        Getter method that returns the ignore string.
+
+        :rtype: str
+        """
+
+        return self._ignore
 
     @abstractmethod
     def isValidInfluence(self, influence):
@@ -243,7 +301,7 @@ class QEditInfluencesDialog(QtWidgets.QDialog):
         """
         Slot method called whenever an item is expanded.
 
-        :param index: QtCore.QModelIndex
+        :type index: QtCore.QModelIndex
         :rtype: None
         """
 
@@ -253,12 +311,15 @@ class QEditInfluencesDialog(QtWidgets.QDialog):
 
             # Get item from index
             #
-            item = self.influenceItemModel.itemFromIndex(index)
+            sourceIndex = self.influenceFilterModel.mapToSource(index)
+            item = self.influenceItemModel.itemFromIndex(sourceIndex)
+
             expanded = self.influenceTreeView.isExpanded(index)
 
             for childItem in self.iterChildItems(item):
 
-                self.influenceTreeView.setExpanded(childItem.index(), expanded)
+                childIndex = self.influenceFilterModel.mapFromSource(childItem.index())
+                self.influenceTreeView.setExpanded(childIndex, expanded)
 
         else:
 
@@ -300,7 +361,8 @@ class QEditInfluencesDialog(QtWidgets.QDialog):
 
             # Get item from index
             #
-            item = self.influenceItemModel.itemFromIndex(index)
+            itemIndex = self.influenceFilterModel.mapToSource(index)
+            item = self.influenceItemModel.itemFromIndex(itemIndex)
 
             # Check if item is valid
             #

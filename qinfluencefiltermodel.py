@@ -218,7 +218,7 @@ class QInfluenceFilterModel(QtCore.QSortFilterProxyModel):
 
         else:
 
-            return True
+            return False
 
     def isRowHidden(self, row):
         """

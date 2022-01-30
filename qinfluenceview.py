@@ -280,18 +280,25 @@ class QInfluenceView(QtWidgets.QTableView):
         #
         super(QInfluenceView, self).selectionChanged(selected, deselected)
 
-        # Get selected rows
+        # Update internal selection tracker
+        # Be aware that QItemSelection stores both row and column indices!
         #
-        indices = selected.indexes()  # This returns both row and column indices!
+        selectedRows, deselectedRows = None, None
         model = self.model()
 
         if isinstance(model, QtCore.QAbstractProxyModel):
 
-            self._selectedRows = [model.mapToSource(x).row() for x in indices if x.column() == 0]
+            selectedRows = [model.mapToSource(x).row() for x in selected.indexes() if model.mapToSource(x).column() == 0]
+            deselectedRows = [model.mapToSource(x).row() for x in deselected.indexes() if model.mapToSource(x).column() == 0]
 
         else:
 
-            self._selectedRows = [x.row() for x in indices if x.column() == 0]
+            selectedRows = [x.row() for x in selected.indexes() if x.column() == 0]
+            deselectedRows = [x.row() for x in deselected.indexes() if x.column() == 0]
+
+        # Update internal selection tracker
+        #
+        self._selectedRows = list(set(self._selectedRows).difference(deselectedRows).union(selectedRows))
 
         # Force the sibling to match selections
         # Be sure to check if a sync is pending to avoid cycle checks!

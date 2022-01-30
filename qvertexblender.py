@@ -4,7 +4,7 @@ import webbrowser
 from PySide2 import QtCore, QtWidgets, QtGui
 from functools import partial
 from dcc import fnscene, fnnotify, fnnode, fnskin
-from dcc.userinterface import qproxywindow, iconutils
+from dcc.userinterface import qproxywindow, qiconlibrary
 
 from . import qinfluenceview, qinfluencefiltermodel
 from .dialogs import qeditinfluencesdialog, qeditweightsdialog
@@ -288,7 +288,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         self.searchBox.textChanged.connect(self.searchChanged)
         self.searchBox.returnPressed.connect(self.searchPressed)
 
-        self.searchBtn = QtWidgets.QPushButton(iconutils.getIconByName('search'), '')
+        self.searchBtn = QtWidgets.QPushButton(qiconlibrary.getIconByName('search'), '')
         self.searchBtn.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         self.searchBtn.setFixedSize(QtCore.QSize(23, 23))
         self.searchBtn.clicked.connect(self.searchPressed)

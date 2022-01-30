@@ -3,7 +3,7 @@ import fnmatch
 from PySide2 import QtCore, QtWidgets, QtGui
 from abc import abstractmethod
 from dcc import fnskin, fnnode
-from dcc.userinterface import iconutils
+from dcc.userinterface import qiconlibrary
 
 import logging
 logging.basicConfig()
@@ -59,7 +59,7 @@ class QEditInfluencesDialog(QtWidgets.QDialog):
     Overload of QDialog used to edit influences for a skin deformer.
     """
 
-    __icons__ = {True: iconutils.getIconByName('yes'), False: iconutils.getIconByName('no')}
+    __icons__ = {True: qiconlibrary.getIconByName('yes'), False: qiconlibrary.getIconByName('no')}
 
     def __init__(self, *args, **kwargs):
         """

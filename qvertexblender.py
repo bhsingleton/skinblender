@@ -44,6 +44,8 @@ class QVertexBlender(qproxywindow.QProxyWindow):
     Overload of QProxyWindow used to manipulate vertex weights.
     """
 
+    __title__ = 'Vertex Blender'
+
     def __init__(self, *args, **kwargs):
         """
         Private method called after a new instance has been created.
@@ -74,7 +76,6 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         self._selectionChangedId = None
         self._undoId = None
         self._redoId = None
-        self._settings = QtCore.QSettings('Ben Singleton', 'Vertex Blender')
 
     def __build__(self):
         """
@@ -89,7 +90,6 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
         # Edit window properties
         #
-        self.setWindowTitle('|| Vertex Blender')
         self.setMinimumSize(QtCore.QSize(385, 555))
         self.setCentralWidget(QtWidgets.QWidget())
         self.centralWidget().setLayout(QtWidgets.QVBoxLayout())
@@ -567,28 +567,6 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
         self.optionsLayout.addLayout(self.scaleLayout)
 
-    def showEvent(self, event):
-        """
-        Event method called after the window has been shown.
-
-        :type event: QtGui.QShowEvent
-        :rtype: None
-        """
-
-        # Modify window settings
-        #
-        keys = self._settings.allKeys()
-        numKeys = len(keys)
-
-        if numKeys > 0:
-
-            self.resize(self._settings.value('editor/size'))
-            self.move(self._settings.value('editor/pos'))
-
-        # Call parent method
-        #
-        super(QVertexBlender, self).showEvent(event)
-
     def closeEvent(self, event):
         """
         Event method called after the window has been closed.
@@ -601,36 +579,9 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         #
         self.envelopeButton.setChecked(False)
 
-        # Store window settings
-        #
-        self._settings.setValue('editor/size', self.size())
-        self._settings.setValue('editor/pos', self.pos())
-
-        log.info('Saving settings to: %s' % self._settings.fileName())
-
         # Call parent method
         #
         return super(QVertexBlender, self).closeEvent(event)
-
-    @classmethod
-    def createStandardItem(cls, text, height=16):
-        """
-        Class method used to create a QStandardItem from the given string value.
-
-        :type text: str
-        :type height: int
-        :rtype: QtGui.QStandardItem
-        """
-
-        # Create item and resize based on text width
-        #
-        item = QtGui.QStandardItem(text)
-        textWidth = cls.getTextWidth(item, text)
-
-        item.setSizeHint(QtCore.QSize(textWidth, height))
-        item.setTextAlignment(QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter)
-
-        return item
 
     @property
     def skin(self):

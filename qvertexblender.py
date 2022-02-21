@@ -44,8 +44,6 @@ class QVertexBlender(qproxywindow.QProxyWindow):
     Overload of QProxyWindow used to manipulate vertex weights.
     """
 
-    __title__ = 'Vertex Blender'
-
     def __init__(self, *args, **kwargs):
         """
         Private method called after a new instance has been created.
@@ -90,6 +88,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
         # Edit window properties
         #
+        self.setWindowTitle('Vertex Blender')
         self.setMinimumSize(QtCore.QSize(385, 555))
         self.setCentralWidget(QtWidgets.QWidget())
         self.centralWidget().setLayout(QtWidgets.QVBoxLayout())

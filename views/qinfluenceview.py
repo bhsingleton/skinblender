@@ -213,7 +213,7 @@ class QInfluenceView(QtWidgets.QTableView):
         #
         itemSelection = QtCore.QItemSelection()
         model = self.model()
-        print('%s: Selecting %s' % (self, rows))
+
         if isinstance(model, QtCore.QAbstractProxyModel):
 
             # Set any overrides
@@ -234,9 +234,7 @@ class QInfluenceView(QtWidgets.QTableView):
 
             # Remap selection to source model
             #
-            print('Before = %s' % itemSelection.indexes())
             itemSelection = model.mapSelectionFromSource(itemSelection)
-            print('After = %s' % itemSelection.indexes())
 
         else:
 

@@ -24,11 +24,9 @@ class QInfluenceItemFilterModel(QtCore.QSortFilterProxyModel):
         #
         super(QInfluenceItemFilterModel, self).__init__(parent)
 
-        # Declare class variables
+        # Declare private variables
         #
         self._overrides = []
-        self._activeInfluences = []
-        self._inactiveInfluences = []
     # endregion
 
     # region Properties
@@ -61,29 +59,18 @@ class QInfluenceItemFilterModel(QtCore.QSortFilterProxyModel):
         #
         self._overrides = list(overrides)
         self.invalidateFilter()
-
-    @property
-    def activeInfluences(self):
-        """
-        Getter method that returns the active influence IDs.
-
-        :rtype: list[int]
-        """
-
-        return self._activeInfluences
-
-    @property
-    def inactiveInfluences(self):
-        """
-        Getter method that returns the inactive influence IDs.
-
-        :rtype: list[int]
-        """
-
-        return self._inactiveInfluences
     # endregion
 
     # region Methods
+    def activeInfluences(self):
+        """
+        Returns a list of active influences.
+
+        :rtype: list[int]
+        """
+
+        return [self.mapToSource(self.index(x, 0)).row() for x in range(self.rowCount())]
+
     def activeInfluenceCount(self):
         """
         Evaluates the number of active influences.
@@ -91,7 +78,16 @@ class QInfluenceItemFilterModel(QtCore.QSortFilterProxyModel):
         :rtype: int
         """
 
-        return len(self._activeInfluences)
+        return len(self.activeInfluences())
+
+    def inactiveInfluences(self):
+        """
+        Returns a list of inactive influences.
+
+        :rtype: list[int]
+        """
+
+        return list(set(range(self.sourceModel().rowCount())).difference(set(self.activeInfluences())))
 
     def inactiveInfluenceCount(self):
         """
@@ -100,7 +96,7 @@ class QInfluenceItemFilterModel(QtCore.QSortFilterProxyModel):
         :rtype: int
         """
 
-        return len(self._inactiveInfluences)
+        return len(self.inactiveInfluences())
 
     def filterAcceptsRow(self, row, parent):
         """
@@ -118,7 +114,6 @@ class QInfluenceItemFilterModel(QtCore.QSortFilterProxyModel):
 
         if sourceModel.isNullInfluence(index):
 
-            self._inactiveInfluences.append(row)
             return False
 
         # Call parent method
@@ -129,33 +124,14 @@ class QInfluenceItemFilterModel(QtCore.QSortFilterProxyModel):
 
         if acceptsRow or row in selectedRows:
 
-            self._activeInfluences.append(row)
             return True
 
         elif row in self._overrides:
 
-            self._activeInfluences.append(row)
             self._overrides.remove(row)
             return True
 
         else:
 
-            self._inactiveInfluences.append(row)
             return False
-
-    def invalidateFilter(self):
-        """
-        Clears the influence lists before filtering anymore rows.
-
-        :rtype: None
-        """
-
-        # Reset private lists
-        #
-        del self._activeInfluences[:]
-        del self._inactiveInfluences[:]
-
-        # Call parent method
-        #
-        super(QInfluenceItemFilterModel, self).invalidateFilter()
     # endregion

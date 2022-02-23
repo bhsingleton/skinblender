@@ -403,7 +403,7 @@ class QVertexBlender(quicwindow.QUicWindow):
 
         else:
 
-            influenceIds = [x for x in self.weightItemFilterModel.activeInfluences if x not in selectedRows]
+            influenceIds = [x for x in self.weightItemFilterModel.activeInfluences() if x not in selectedRows]
 
         # Return influence ids
         #

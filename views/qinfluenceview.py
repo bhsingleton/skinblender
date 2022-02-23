@@ -158,12 +158,12 @@ class QInfluenceView(QtWidgets.QTableView):
         :rtype: int
         """
 
-        model = self.model()
-        numActiveInfluences = len(model.activeInfluences)
+        activeInfluences = self.model().activeInfluences()
+        numActiveInfluences = len(activeInfluences)
 
         if numActiveInfluences > 0:
 
-            return model.activeInfluences[0]
+            return activeInfluences[0]
 
         else:
 

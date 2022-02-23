@@ -27,16 +27,12 @@ class QWeightItemFilterModel(qinfluenceitemfiltermodel.QInfluenceItemFilterModel
 
         if sourceModel.isNullInfluence(index):
 
-            self._inactiveInfluences.append(row)
             return False
 
         # Check if row contains null weights
         #
-        isNullWeights = sourceModel.isNullWeight(index)
+        if not sourceModel.isNullWeight(index):
 
-        if not isNullWeights:
-
-            self._activeInfluences.append(row)
             return True
 
         else:
@@ -47,16 +43,13 @@ class QWeightItemFilterModel(qinfluenceitemfiltermodel.QInfluenceItemFilterModel
 
             if row in self._overrides:
 
-                self._activeInfluences.append(row)
                 self._overrides.remove(row)
                 return True
 
             elif row in selectedRows:
 
-                self._activeInfluences.append(row)
                 return True
 
             else:
 
-                self._inactiveInfluences.append(row)
                 return False

@@ -294,6 +294,12 @@ class QVertexBlender(quicwindow.QUicWindow):
         :rtype: None
         """
 
+        # Call parent method
+        #
+        super(QVertexBlender, self).saveSettings()
+
+        # Save user settings
+        #
         self.settings.setValue('editor/mirrorAxis', self.mirrorAxis)
         self.settings.setValue('editor/mirrorTolerance', self.mirrorTolerance)
         self.settings.setValue('editor/blendByDistance', self.blendByDistance)
@@ -305,6 +311,12 @@ class QVertexBlender(quicwindow.QUicWindow):
         :rtype: None
         """
 
+        # Call parent method
+        #
+        super(QVertexBlender, self).loadSettings()
+
+        # Load user settings
+        #
         mirrorAxis = self.settings.value('editor/mirrorAxis', defaultValue='0', type=int)
         self.mirrorAxisActionGroup.actions()[mirrorAxis].setChecked(True)
 
@@ -391,7 +403,7 @@ class QVertexBlender(quicwindow.QUicWindow):
 
         else:
 
-            influenceIds = [x for x in self.weightFilterModel.activeInfluences if x not in selectedRows]
+            influenceIds = [x for x in self.weightItemFilterModel.activeInfluences if x not in selectedRows]
 
         # Return influence ids
         #
@@ -1005,13 +1017,14 @@ class QVertexBlender(quicwindow.QUicWindow):
         #
         currentInfluence = self.currentInfluence()
         sourceInfluences = self.sourceInfluences()
+        vertexWeights = self.vertexWeights()
 
         updates = {}
 
         for (vertexIndex, falloff) in self._softSelection.items():
 
             updates[vertexIndex] = self.skin.setWeights(
-                self._vertexWeights[vertexIndex],
+                vertexWeights[vertexIndex],
                 currentInfluence,
                 sourceInfluences,
                 self.__presets__[index],
@@ -1038,13 +1051,14 @@ class QVertexBlender(quicwindow.QUicWindow):
         currentInfluence = self.currentInfluence()
         sourceInfluences = self.sourceInfluences()
         amount = self.setterSpinBox.value()
+        vertexWeights = self.vertexWeights()
 
         updates = {}
 
         for (vertexIndex, falloff) in self._softSelection.items():
 
             updates[vertexIndex] = self.skin.setWeights(
-                self._vertexWeights[vertexIndex],
+                vertexWeights[vertexIndex],
                 currentInfluence,
                 sourceInfluences,
                 amount,
@@ -1054,7 +1068,6 @@ class QVertexBlender(quicwindow.QUicWindow):
         # Assign updates to skin
         #
         self.skin.applyVertexWeights(updates)
-
         self.invalidateWeights()
         self.invalidateColors()
 
@@ -1072,6 +1085,7 @@ class QVertexBlender(quicwindow.QUicWindow):
         currentInfluence = self.currentInfluence()
         sourceInfluences = self.sourceInfluences()
         amount = self.incrementSpinBox.value() * self.__sign__[index]
+        vertexWeights = self.vertexWeights()
 
         # Iterate through selection
         #
@@ -1080,7 +1094,7 @@ class QVertexBlender(quicwindow.QUicWindow):
         for (vertexIndex, falloff) in self._softSelection.items():
 
             updates[vertexIndex] = self.skin.incrementWeights(
-                self._vertexWeights[vertexIndex],
+                vertexWeights[vertexIndex],
                 currentInfluence,
                 sourceInfluences,
                 amount,
@@ -1090,7 +1104,6 @@ class QVertexBlender(quicwindow.QUicWindow):
         # Assign updates to skin
         #
         self.skin.applyVertexWeights(updates)
-
         self.invalidateWeights()
         self.invalidateColors()
 
@@ -1108,6 +1121,7 @@ class QVertexBlender(quicwindow.QUicWindow):
         currentInfluence = self.currentInfluence()
         sourceInfluences = self.sourceInfluences()
         percent = self.scaleSpinBox.value() * self.__sign__[index]
+        vertexWeights = self.vertexWeights()
 
         # Iterate through selection
         #
@@ -1116,7 +1130,7 @@ class QVertexBlender(quicwindow.QUicWindow):
         for (vertexIndex, falloff) in self._softSelection.items():
 
             vertexWeights[vertexIndex] = self.skin.scaleWeights(
-                self._vertexWeights[vertexIndex],
+                vertexWeights[vertexIndex],
                 currentInfluence,
                 sourceInfluences,
                 percent,
@@ -1126,7 +1140,6 @@ class QVertexBlender(quicwindow.QUicWindow):
         # Assign updates to skin
         #
         self.skin.applyVertexWeights(vertexWeights)
-
         self.invalidateWeights()
         self.invalidateColors()
 

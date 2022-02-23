@@ -214,9 +214,9 @@ class QVertexBlender(quicwindow.QUicWindow):
         #
         self.slabMenu = QtWidgets.QMenu(parent=self)
 
-        self.slabGroup = QtWidgets.QActionGroup(self.slabMenu)
-        self.slabGroup.setExclusive(True)
-        self.slabGroup.triggered.connect(self.on_slabGroup_triggered)
+        self.slabActionGroup = QtWidgets.QActionGroup(self.slabMenu)
+        self.slabActionGroup.setExclusive(True)
+        self.slabActionGroup.triggered.connect(self.on_slabActionGroup_triggered)
 
         self.closestPointAction = self.slabMenu.addAction('&Closest Point')
         self.closestPointAction.setCheckable(True)
@@ -228,9 +228,9 @@ class QVertexBlender(quicwindow.QUicWindow):
         self.alongNormalAction = self.slabMenu.addAction('&Along Normal')
         self.alongNormalAction.setCheckable(True)
 
-        self.slabGroup.addAction(self.closestPointAction)
-        self.slabGroup.addAction(self.nearestNeighbourAction)
-        self.slabGroup.addAction(self.alongNormalAction)
+        self.slabActionGroup.addAction(self.closestPointAction)
+        self.slabActionGroup.addAction(self.nearestNeighbourAction)
+        self.slabActionGroup.addAction(self.alongNormalAction)
 
     def postLoad(self):
         """
@@ -303,6 +303,7 @@ class QVertexBlender(quicwindow.QUicWindow):
         self.settings.setValue('editor/mirrorAxis', self.mirrorAxis)
         self.settings.setValue('editor/mirrorTolerance', self.mirrorTolerance)
         self.settings.setValue('editor/blendByDistance', self.blendByDistance)
+        self.settings.setValue('editor/slabOption', self.slabOption)
 
     def loadSettings(self):
         """
@@ -322,6 +323,9 @@ class QVertexBlender(quicwindow.QUicWindow):
 
         blendByDistance = self.settings.value('editor/blendByDistance', defaultValue='False', type=bool)
         self.blendByDistanceAction.setChecked(blendByDistance)
+
+        slabOption = self.settings.value('editor/slabOption', defaultValue='0', type=int)
+        self.slabActionGroup.actions(slabOption).setChecked(True)
 
         self.mirrorTolerance = self.settings.value('editor/mirrorTolerance', defaultValue='1e-3', type=float)
 
@@ -411,6 +415,107 @@ class QVertexBlender(quicwindow.QUicWindow):
         return influenceIds
 
     @validate
+    def copyWeights(self):
+        """
+        Copies the skin weights from the current skin.
+
+        :rtype: None
+        """
+
+        self.skin.copyWeights()
+
+    @validate
+    def pasteWeights(self, average=False):
+        """
+        Pastes the skin weights to the current skin.
+
+        :type average: bool
+        :rtype: None
+        """
+
+        if average:
+
+            self.skin.pasteAveragedWeights()
+
+        else:
+
+            self.skin.pasteWeights()
+
+        self.invalidateWeights()
+        self.invalidateColors()
+
+    @validate
+    def slabPasteWeights(self):
+        """
+        Slab pastes the active component selection.
+
+        :rtype: None
+        """
+
+        self.skin.slabPasteWeights(self.selection(), mode=self.slabOption)
+
+        self.invalidateWeights()
+        self.invalidateColors()
+
+    @validate
+    def blendVertices(self):
+        """
+        Blends the active component selection.
+
+        :rtype: None
+        """
+
+        self.skin.blendVertices(self.selection())
+
+        self.invalidateWeights()
+        self.invalidateColors()
+
+    @validate
+    def blendBetweenVertices(self):
+        """
+        Blends between the active selection pairs.
+
+        :rtype: None
+        """
+
+        self.skin.blendBetweenVertices(self.selection(), blendByDistance=self.blendByDistance)
+
+        self.invalidateWeights()
+        self.invalidateColors()
+
+    def mirrorWeights(self, pull=False):
+        """
+        Mirrors the active component selection.
+
+        :type pull: bool
+        :rtype: None
+        """
+
+        # Mirror vertex weights
+        #
+        vertexWeights = self.skin.mirrorVertexWeights(
+            self.selection(),
+            pull=pull,
+            axis=self.mirrorAxis,
+            tolerance=self.mirrorTolerance
+        )
+
+        self.skin.applyVertexWeights(vertexWeights)
+
+        # Check if active selection should be reset
+        #
+        resetActiveSelection = self.resetActiveSelectionAction.isChecked()
+
+        if resetActiveSelection:
+
+            self.skin.setSelection(list(vertexWeights.keys()))
+
+        else:
+
+            self.invalidateWeights()
+            self.invalidateColors()
+
+    @validate
     def invalidateInfluences(self):
         """
         Invalidation method used to reset the influence list.
@@ -441,7 +546,6 @@ class QVertexBlender(quicwindow.QUicWindow):
     # endregion
 
     # region Callbacks
-    @validate
     def activeSelectionChanged(self):
         """
         Callback method used to invalidate the active selection.
@@ -449,7 +553,13 @@ class QVertexBlender(quicwindow.QUicWindow):
         :rtype: None
         """
 
-        # Check if skin is selected
+        # Check if skin is valid
+        #
+        if not self.skin.isValid():
+
+            return
+
+        # Check if skin is partially selected
         # If not then we don't need to invalidate
         #
         if self.skin.isPartiallySelected():
@@ -459,6 +569,10 @@ class QVertexBlender(quicwindow.QUicWindow):
 
             self.vertexSelectionChanged.emit(self._selection)
             self.invalidateColors()
+
+        else:
+
+            log.debug('Skipping invalidation...')
     # endregion
 
     # region Events
@@ -480,6 +594,83 @@ class QVertexBlender(quicwindow.QUicWindow):
     # endregion
 
     # region Slots
+    @QtCore.Slot(bool)
+    def on_editEnvelopePushButton_toggled(self, checked):
+        """
+        Toggled slot method called whenever the user enters edit envelope mode.
+
+        :type checked: bool
+        :rtype: None
+        """
+
+        # Check if envelope is checked
+        #
+        sender = self.sender()
+        fnNotify = fnnotify.FnNotify()
+
+        if checked:
+
+            # Evaluate active selection
+            # If nothing is selected then uncheck button
+            #
+            selection = fnskin.FnSkin.getActiveSelection()
+            selectionCount = len(selection)
+
+            if selectionCount == 0:
+
+                sender.setChecked(False)
+                return
+
+            # Try and set object
+            # If selected node is invalid then exit envelope mode
+            #
+            success = self.skin.trySetObject(selection[0])
+
+            if not success:
+
+                sender.setChecked(False)
+                return
+
+            # Add callbacks
+            #
+            self._selectionChangedId = fnNotify.addSelectionChangedNotify(self.activeSelectionChanged)
+            self._undoId = fnNotify.addUndoNotify(self.invalidateColors)
+            self._redoId = fnNotify.addRedoNotify(self.invalidateColors)
+
+            # Enable vertex colour display
+            #
+            self.skinChanged.emit(self.skin.object())
+            self.skin.showColors()
+
+            self.invalidateWeights()
+            self.invalidateColors()
+
+            # Select first influence
+            #
+            self.influenceTable.selectFirstRow()
+
+        else:
+
+            # Check if function set still has an object attached
+            # If so then we need to reset it and remove the previous callbacks
+            #
+            if self.skin.isValid():
+
+                # Remove callbacks
+                #
+                self._selectionChangedId = fnNotify.removeNotify(self._selectionChangedId)
+                self._undoId = fnNotify.removeNotify(self._undoId)
+                self._redoId = fnNotify.removeNotify(self._redoId)
+
+                # Reset object
+                #
+                self.skin.hideColors()
+                self.skin.resetObject()
+
+            # Signal skin has changed
+            #
+            self.skinChanged.emit(None)
+
     @QtCore.Slot(bool)
     def on_saveWeightsAction_triggered(self, checked=False):
         """
@@ -715,7 +906,7 @@ class QVertexBlender(quicwindow.QUicWindow):
         :rtype: None
         """
 
-        self.skin.copyWeights()
+        self.copyWeights()
 
     @QtCore.Slot(bool)
     def on_pasteWeightsAction_triggered(self, checked=False):
@@ -726,11 +917,7 @@ class QVertexBlender(quicwindow.QUicWindow):
         :rtype: None
         """
 
-        if self.skin.isValid():
-
-            self.skin.pasteWeights()
-            self.invalidateWeights()
-            self.invalidateColors()
+        self.pasteWeights()
 
     @QtCore.Slot(bool)
     def on_pasteAveragedWeightsAction_triggered(self, checked=False):
@@ -741,11 +928,7 @@ class QVertexBlender(quicwindow.QUicWindow):
         :rtype: None
         """
 
-        if self.skin.isValid():
-
-            self.skin.pasteAveragedWeights()
-            self.invalidateWeights()
-            self.invalidateColors()
+        self.pasteWeights(average=True)
 
     @QtCore.Slot(bool)
     def on_blendVerticesAction_triggered(self, checked=False):
@@ -756,10 +939,7 @@ class QVertexBlender(quicwindow.QUicWindow):
         :rtype: None
         """
 
-        self.skin.blendVertices(self.selection())
-
-        self.invalidateWeights()
-        self.invalidateColors()
+        self.blendVertices()
 
     @QtCore.Slot(bool)
     def on_blendBetweenVerticesAction_triggered(self, checked=False):
@@ -770,87 +950,18 @@ class QVertexBlender(quicwindow.QUicWindow):
         :rtype: None
         """
 
-        self.skin.blendBetweenVertices(self.selection(), blendByDistance=self.blendByDistance)
+        self.blendBetweenVertices()
 
-        self.invalidateWeights()
-        self.invalidateColors()
-
-    @QtCore.Slot(bool)
-    def on_editEnvelopePushButton_toggled(self, checked):
+    @QtCore.Slot(QtWidgets.QAction)
+    def on_mirrorAxisActionGroup_triggered(self, action):
         """
-        Toggled slot method called whenever the user enters edit envelope mode.
+        Triggered slot method responsible for updating the internal mirror axis.
 
-        :type checked: bool
+        :type action: QtWidgets.QAction
         :rtype: None
         """
 
-        # Check if envelope is checked
-        #
-        sender = self.sender()
-        fnNotify = fnnotify.FnNotify()
-
-        if checked:
-
-            # Evaluate active selection
-            # If nothing is selected then uncheck button
-            #
-            selection = fnskin.FnSkin.getActiveSelection()
-            selectionCount = len(selection)
-
-            if selectionCount == 0:
-
-                sender.setChecked(False)
-                return
-
-            # Try and set object
-            # If selected node is invalid then exit envelope mode
-            #
-            success = self.skin.trySetObject(selection[0])
-
-            if not success:
-
-                sender.setChecked(False)
-                return
-
-            # Add callbacks
-            #
-            self._selectionChangedId = fnNotify.addSelectionChangedNotify(self.activeSelectionChanged)
-            self._undoId = fnNotify.addUndoNotify(self.invalidateColors)
-            self._redoId = fnNotify.addRedoNotify(self.invalidateColors)
-
-            # Enable vertex colour display
-            #
-            self.skinChanged.emit(self.skin.object())
-            self.skin.showColors()
-
-            self.invalidateWeights()
-            self.invalidateColors()
-
-            # Select first influence
-            #
-            self.influenceTable.selectFirstRow()
-
-        else:
-
-            # Check if function set still has an object attached
-            # If so then we need to reset it and remove the previous callbacks
-            #
-            if self.skin.isValid():
-
-                # Remove callbacks
-                #
-                self._selectionChangedId = fnNotify.removeNotify(self._selectionChangedId)
-                self._undoId = fnNotify.removeNotify(self._undoId)
-                self._redoId = fnNotify.removeNotify(self._redoId)
-
-                # Reset object
-                #
-                self.skin.hideColors()
-                self.skin.resetObject()
-
-            # Signal skin has changed
-            #
-            self.skinChanged.emit(None)
+        self._mirrorAxis = self.sender().actions().index(action)
 
     @QtCore.Slot()
     def on_searchLineEdit_editingFinished(self):
@@ -964,29 +1075,7 @@ class QVertexBlender(quicwindow.QUicWindow):
         :rtype: None
         """
 
-        # Mirror vertex weights
-        #
-        vertexWeights = self.skin.mirrorVertexWeights(
-            self.selection(),
-            pull=bool(index),
-            axis=self.mirrorAxis,
-            tolerance=self.mirrorTolerance
-        )
-
-        self.skin.applyVertexWeights(vertexWeights)
-
-        # Check if active selection should be reset
-        #
-        resetActiveSelection = self.resetPreBindMatricesAction.isChecked()
-
-        if resetActiveSelection:
-
-            self.skin.setSelection(list(vertexWeights.keys()))
-
-        # Invalidate user interface
-        #
-        self.invalidateWeights()
-        self.invalidateColors()
+        self.mirrorWeights(pull=bool(index))
 
     @QtCore.Slot(bool)
     def on_slabToolButton_clicked(self, checked=False):
@@ -997,12 +1086,18 @@ class QVertexBlender(quicwindow.QUicWindow):
         :rtype: bool
         """
 
-        # Get slab option before pasting
-        #
-        self.skin.slabPasteWeights(self.selection(), mode=self.slabOption)
+        self.slabPasteWeights()
 
-        self.invalidateWeights()
-        self.invalidateColors()
+    @QtCore.Slot(QtWidgets.QAction)
+    def on_slabActionGroup_triggered(self, action):
+        """
+        Triggered slot method responsible for updating the internal slab option.
+
+        :type action: QtWidgets.QAction
+        :rtype: None
+        """
+
+        self._slabOption = self.sender().actions().index(action)
 
     @QtCore.Slot(int)
     def on_weightPresetButtonGroup_idClicked(self, index):
@@ -1192,28 +1287,6 @@ class QVertexBlender(quicwindow.QUicWindow):
         """
 
         self._selectShell = checked
-
-    @QtCore.Slot(QtWidgets.QAction)
-    def on_mirrorAxisActionGroup_triggered(self, action):
-        """
-        Triggered slot method responsible for updating the internal mirror axis.
-
-        :type action: QtWidgets.QAction
-        :rtype: None
-        """
-
-        self._mirrorAxis = self.sender().actions().index(action)
-
-    @QtCore.Slot(QtWidgets.QAction)
-    def on_slabGroup_triggered(self, action):
-        """
-        Triggered slot method responsible for updating the internal slab option.
-
-        :type action: QtWidgets.QAction
-        :rtype: None
-        """
-
-        self._slabOption = self.sender().actions().index(action)
 
     @QtCore.Slot(bool)
     def on_selectVerticesAction_triggered(self, checked=False):

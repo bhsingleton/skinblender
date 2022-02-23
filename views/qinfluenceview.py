@@ -121,7 +121,7 @@ class QInfluenceView(QtWidgets.QTableView):
 
         return self._pending
 
-    def isBuddyEnabled(self):
+    def isBuddyPending(self):
         """
         Evaluates if the buddy is attempting to synchronize with this widget.
 
@@ -213,7 +213,7 @@ class QInfluenceView(QtWidgets.QTableView):
         #
         itemSelection = QtCore.QItemSelection()
         model = self.model()
-
+        print('%s: Selecting %s' % (self, rows))
         if isinstance(model, QtCore.QAbstractProxyModel):
 
             # Set any overrides
@@ -234,7 +234,9 @@ class QInfluenceView(QtWidgets.QTableView):
 
             # Remap selection to source model
             #
+            print('Before = %s' % itemSelection.indexes())
             itemSelection = model.mapSelectionFromSource(itemSelection)
+            print('After = %s' % itemSelection.indexes())
 
         else:
 
@@ -252,33 +254,7 @@ class QInfluenceView(QtWidgets.QTableView):
         # Select items
         #
         self.selectionModel().select(itemSelection, QtCore.QItemSelectionModel.ClearAndSelect)
-
-        # Scroll to top row
-        #
-        numRows = len(rows)
-
-        if numRows > 0:
-
-            # Create index from row
-            #
-            index = None
-
-            if isinstance(model, QtCore.QAbstractProxyModel):
-
-                index = model.sourceModel().index(rows[0], 0)
-                index = model.mapFromSource(index)
-
-            else:
-
-                index = model.index(rows[0], 0)
-
-            # Scroll to index
-            #
-            self.scrollTo(index, QtWidgets.QAbstractItemView.PositionAtCenter)
-
-        else:
-
-            self.scrollToTop()
+        self.scrollToTop()
 
     def selectionChanged(self, selected, deselected):
         """
@@ -296,27 +272,20 @@ class QInfluenceView(QtWidgets.QTableView):
         # Update internal selection tracker
         # Be aware that QItemSelection stores both row and column indices!
         #
-        selectedRows, deselectedRows = None, None
         model = self.model()
 
         if isinstance(model, QtCore.QAbstractProxyModel):
 
-            selectedRows = [model.mapToSource(x).row() for x in selected.indexes() if model.mapToSource(x).column() == 0]
-            deselectedRows = [model.mapToSource(x).row() for x in deselected.indexes() if model.mapToSource(x).column() == 0]
+            self._selectedRows = [model.mapToSource(x).row() for x in selected.indexes() if model.mapToSource(x).column() == 0]
 
         else:
 
-            selectedRows = [x.row() for x in selected.indexes() if x.column() == 0]
-            deselectedRows = [x.row() for x in deselected.indexes() if x.column() == 0]
-
-        # Update internal selection tracker
-        #
-        self._selectedRows = list(set(self._selectedRows).difference(deselectedRows).union(selectedRows))
+            self._selectedRows = [x.row() for x in selected.indexes() if x.column() == 0]
 
         # Force the sibling to match selections
         # Be sure to check if a sync is pending to avoid cycle checks!
         #
-        if self.autoSelect() and (self.hasBuddy() and not self.isBuddyEnabled()):
+        if self.autoSelect() and (self.hasBuddy() and not self.isBuddyPending()):
 
             self.synchronize()
     # endregion

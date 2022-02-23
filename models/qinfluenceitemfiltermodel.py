@@ -111,7 +111,7 @@ class QInfluenceItemFilterModel(QtCore.QSortFilterProxyModel):
         :rtype: bool
         """
 
-        # Check if row contains null data
+        # Check if row contains a null influence
         #
         sourceModel = self.sourceModel()
         index = sourceModel.index(row, 0, parent=parent)
@@ -125,8 +125,9 @@ class QInfluenceItemFilterModel(QtCore.QSortFilterProxyModel):
         # This will evaluate any regex expressions
         #
         acceptsRow = super(QInfluenceItemFilterModel, self).filterAcceptsRow(row, parent)
+        selectedRows = self.parent().selectedRows()
 
-        if acceptsRow:
+        if acceptsRow or row in selectedRows:
 
             self._activeInfluences.append(row)
             return True

@@ -25,21 +25,38 @@ class QWeightItemFilterModel(qinfluenceitemfiltermodel.QInfluenceItemFilterModel
         sourceModel = self.sourceModel()
         index = sourceModel.index(row, 0, parent=parent)
 
-        if sourceModel.isNullWeight(index):
+        if sourceModel.isNullInfluence(index):
 
-            # Check if row is in overrides
+            self._inactiveInfluences.append(row)
+            return False
+
+        # Check if row contains null weights
+        #
+        isNullWeights = sourceModel.isNullWeight(index)
+
+        if not isNullWeights:
+
+            self._activeInfluences.append(row)
+            return True
+
+        else:
+
+            # Check if exception can be made to row
             #
+            selectedRows = self.parent().selectedRows()
+
             if row in self._overrides:
 
                 self._activeInfluences.append(row)
                 self._overrides.remove(row)
                 return True
 
+            elif row in selectedRows:
+
+                self._activeInfluences.append(row)
+                return True
+
             else:
 
                 self._inactiveInfluences.append(row)
                 return False
-
-        else:
-
-            return super(QWeightItemFilterModel, self).filterAcceptsRow(row, parent)

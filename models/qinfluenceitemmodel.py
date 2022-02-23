@@ -157,11 +157,12 @@ class QInfluenceItemModel(QtCore.QAbstractItemModel):
 
         return len(self.__headers__)
 
-    def getTextSizeHint(self, text):
+    def getTextSizeHint(self, text, padding=6):
         """
         Returns a size hint for the supplied text.
 
         :type text: str
+        :type padding: int
         :rtype: QtCore.QSize
         """
 
@@ -169,7 +170,7 @@ class QInfluenceItemModel(QtCore.QAbstractItemModel):
         font = application.font()
 
         fontMetric = QtGui.QFontMetrics(font)
-        width = fontMetric.width(text)
+        width = fontMetric.width(text) + padding
 
         return QtCore.QSize(width, self._rowHeight)
 

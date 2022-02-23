@@ -42,7 +42,7 @@ class QWeightItemModel(qinfluenceitemmodel.QInfluenceItemModel):
         :rtype: list[int]
         """
 
-        return self._cwd
+        return self._vertexSelection
 
     def setVertexSelection(self, vertexSelection):
         """
@@ -112,7 +112,7 @@ class QWeightItemModel(qinfluenceitemmodel.QInfluenceItemModel):
 
             if weight is not None:
 
-                return str(weight)
+                return str(round(weight, 2))
 
             else:
 
@@ -129,10 +129,6 @@ class QWeightItemModel(qinfluenceitemmodel.QInfluenceItemModel):
         :rtype: None
         """
 
-        # Indicate reset in progress
-        #
-        self.beginResetModel()
-
         # Check if skin is valid
         #
         if self._fnSkin.isValid():
@@ -145,7 +141,7 @@ class QWeightItemModel(qinfluenceitemmodel.QInfluenceItemModel):
             self._vertexWeights = {}
             self._weights = {}
 
-        # Mark reset complete
+        # Emit data changed signal
         #
-        self.endResetModel()
+        self.dataChanged.emit(self.createIndex(0, 0), self.createIndex(self.rowCount(), self.columnCount()))
     # endregion

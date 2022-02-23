@@ -878,13 +878,12 @@ class QVertexBlender(quicwindow.QUicWindow):
         qeditinfluencesdialog.removeInfluences(self.skin.object())
         self.invalidateInfluences()
 
-    @QtCore.Slot(QtCore.QItemSelection, QtCore.QItemSelection)
-    def on_influenceTable_selectionChanged(self, selected, deselected):
+    @QtCore.Slot(QtCore.QModelIndex)
+    def on_influenceTable_clicked(self, index):
         """
         Selection changed slot method responsible for updating the internal tracker.
 
-        :type selected: QtCore.QItemSelection
-        :type deselected: QtCore.QItemSelection
+        :type index: QtCore.QModelIndex
         :rtype: None
         """
 
@@ -1214,7 +1213,7 @@ class QVertexBlender(quicwindow.QUicWindow):
 
         # Get selected rows
         #
-        selectedRows = self.weightListView.selectedRows()
+        selectedRows = self.weightTable.selectedRows()
 
         # Update active selection
         #

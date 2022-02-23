@@ -2,12 +2,11 @@ import os
 import webbrowser
 
 from PySide2 import QtCore, QtWidgets, QtGui
-from functools import partial
 from dcc import fnscene, fnnotify, fnnode, fnskin
-from dcc.userinterface import qproxywindow, qiconlibrary
-
-from . import qinfluenceview, qinfluencefiltermodel
-from .dialogs import qeditinfluencesdialog, qeditweightsdialog
+from dcc.userinterface import quicwindow
+from vertexblender.dialogs import qeditinfluencesdialog, qeditweightsdialog
+from vertexblender.models import qinfluenceitemmodel, qweightitemmodel, qinfluenceitemfiltermodel, qweightitemfiltermodel
+from vertexblender.views import qinfluenceview
 
 import logging
 logging.basicConfig()
@@ -17,7 +16,7 @@ log.setLevel(logging.INFO)
 
 def validate(func):
     """
-    Returns a wrapper that validates functions against the UI before executes.
+    Returns a wrapper that validates functions against the UI before executing.
     This will help reduce the amount of conditions needed when we're not in edit mode.
 
     :type func: function
@@ -39,10 +38,17 @@ def validate(func):
     return wrapper
 
 
-class QVertexBlender(qproxywindow.QProxyWindow):
+class QVertexBlender(quicwindow.QUicWindow):
     """
     Overload of QProxyWindow used to manipulate vertex weights.
     """
+
+    skinChanged = QtCore.Signal(object)
+    vertexSelectionChanged = QtCore.Signal(list)
+
+    # region Dunderscores
+    __presets__ = (0.0, 0.1, 0.25, 0.5, 0.75, 0.9, 1.0)
+    __sign__ = (1.0, -1.0)
 
     def __init__(self, *args, **kwargs):
         """
@@ -53,369 +59,164 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         :rtype: None
         """
 
-        # Call parent method
-        #
-        super(QVertexBlender, self).__init__(*args, **kwargs)
-
         # Declare private variables
         #
         self._skin = fnskin.FnSkin()
         self._currentInfluence = None
         self._softSelection = {}
-        self._vertexWeights = {}
-        self._weights = {}
+        self._selection = []
         self._precision = False
         self._blendByDistance = False
         self._selectShell = False
         self._slabOption = 0
         self._search = ''
         self._mirrorAxis = 0
+        self._mirrorTolerance = 1e-3
         self._clipboard = None
         self._selectionChangedId = None
         self._undoId = None
         self._redoId = None
 
-    def __build__(self):
+        # Declare public variables
+        #
+        self.influenceItemModel = None
+        self.influenceItemFilterModel = None
+        self.weightItemModel = None
+        self.weightItemFilterModel = None
+
+        # Call parent method
+        #
+        super(QVertexBlender, self).__init__(*args, **kwargs)
+    # endregion
+
+    # region Properties
+    @property
+    def skin(self):
         """
-        Private method used to build the user interface.
+        Getter method used to retrieve the selected skin cluster object.
+
+        :rtype: fnskin.FnSkin
+        """
+
+        return self._skin
+
+    @property
+    def precision(self):
+        """
+        Method used to check if precision mode is enabled.
+
+        :rtype: bool
+        """
+
+        return self._precision
+
+    @property
+    def mirrorAxis(self):
+        """
+        Getter method used to retrieve the current mirror axis.
+
+        :rtype: int
+        """
+
+        return self._mirrorAxis
+
+    @property
+    def slabOption(self):
+        """
+        Getter method used to retrieve the current slab option.
+
+        :rtype: int
+        """
+
+        return self._slabOption
+
+    @property
+    def blendByDistance(self):
+        """
+        Getter method that returns the blend by distance flag.
+
+        :rtype: bool
+        """
+
+        return self._blendByDistance
+
+    @property
+    def selectShell(self):
+        """
+        Getter method that returns a flag that indicates if shells should be selected.
+
+        :rtype: bool
+        """
+
+        return self._selectShell
+
+    @property
+    def mirrorTolerance(self):
+        """
+        Getter method that returns the mirror tolerance.
+
+        :rtype: float
+        """
+
+        return self._mirrorTolerance
+
+    @mirrorTolerance.setter
+    def mirrorTolerance(self, mirrorTolerance):
+        """
+        Setter method that updates the mirror tolerance.
+
+        :type mirrorTolerance: float
+        :rtype: None
+        """
+
+        self._mirrorTolerance = mirrorTolerance
+
+    @property
+    def search(self):
+        """
+        Getter method that returns the search string.
+
+        :rtype: str
+        """
+
+        return self._search
+    # endregion
+
+    # region Methods
+    @classmethod
+    def customWidgets(cls):
+        """
+        Returns a dictionary of custom widgets used by this class.
+
+        :rtype: dict[str:type]
+        """
+
+        customWidgets = super(QVertexBlender, cls).customWidgets()
+        customWidgets['QInfluenceView'] = qinfluenceview.QInfluenceView
+
+        return customWidgets
+
+    def preLoad(self):
+        """
+        Called before the user interface has been loaded.
 
         :rtype: None
         """
 
-        # Call parent method
+        # Create weight table context menu
         #
-        super(QVertexBlender, self).__build__()
+        self.weightTableMenu = QtWidgets.QMenu(parent=self)
 
-        # Edit window properties
+        self.selectVerticesAction = self.weightTableMenu.addAction('&Select Affected Vertices')
+        self.selectVerticesAction.triggered.connect(self.on_selectVerticesAction_triggered)
+
+        # Create slab button context menu
         #
-        self.setWindowTitle('Vertex Blender')
-        self.setMinimumSize(QtCore.QSize(385, 555))
-        self.setCentralWidget(QtWidgets.QWidget())
-        self.centralWidget().setLayout(QtWidgets.QVBoxLayout())
+        self.slabMenu = QtWidgets.QMenu(parent=self)
 
-        # Create menu bar
-        #
-        self.setMenuBar(QtWidgets.QMenuBar())
-
-        # Create file menu
-        #
-        self.fileMenu = QtWidgets.QMenu('&File', self.menuBar())
-        self.fileMenu.setSeparatorsCollapsible(False)
-        self.fileMenu.setTearOffEnabled(True)
-        self.fileMenu.setWindowTitle('File')
-
-        self.saveWeightsAction = QtWidgets.QAction('&Save Weights ', self.fileMenu)
-        self.saveWeightsAction.triggered.connect(self.saveWeights)
-
-        self.loadWeightsAction = QtWidgets.QAction('&Load Weights ', self.fileMenu)
-        self.loadWeightsAction.triggered.connect(self.loadWeights)
-
-        self.menuBar().addMenu(self.fileMenu)
-        self.fileMenu.addAction(self.saveWeightsAction)
-        self.fileMenu.addAction(self.loadWeightsAction)
-
-        # Create edit menu
-        #
-        self.editMenu = QtWidgets.QMenu('&Edit', self.menuBar())
-        self.editMenu.setSeparatorsCollapsible(False)
-        self.editMenu.setTearOffEnabled(True)
-        self.editMenu.setWindowTitle('Edit')
-
-        self.copyWeightsAction = QtWidgets.QAction('&Copy Weights', self.editMenu)
-        self.copyWeightsAction.triggered.connect(self.copyWeights)
-
-        self.pasteWeightsAction = QtWidgets.QAction('&Paste Weights', self.editMenu)
-        self.pasteWeightsAction.triggered.connect(self.pasteWeights)
-
-        self.pasteAveragedWeightsAction = QtWidgets.QAction('&Paste Average Weights', self.editMenu)
-        self.pasteAveragedWeightsAction.triggered.connect(self.pasteAveragedWeights)
-
-        self.blendVerticesAction = QtWidgets.QAction('&Blend Vertices', self.editMenu)
-        self.blendVerticesAction.triggered.connect(self.blendVertices)
-
-        self.blendBetweenVerticesAction = QtWidgets.QAction('&Blend Between Vertices', self.editMenu)
-        self.blendBetweenVerticesAction.triggered.connect(self.blendBetweenVertices)
-
-        self.blendByDistanceAction = QtWidgets.QAction('&Blend By Distance', self.editMenu)
-        self.blendByDistanceAction.setCheckable(True)
-        self.blendByDistanceAction.triggered.connect(self.blendByDistanceChanged)
-
-        self.resetIntermediateObjectAction = QtWidgets.QAction('&Reset Intermediate Object', self.editMenu)
-        self.resetIntermediateObjectAction.triggered.connect(self.resetIntermediateObject)
-
-        self.resetPreBindMatricesAction = QtWidgets.QAction('&Reset Pre-Bind Matrices', self.editMenu)
-        self.resetPreBindMatricesAction.triggered.connect(self.resetBindPreMatrices)
-
-        self.menuBar().addMenu(self.editMenu)
-
-        self.editMenu.addSection('Copy/Paste Weights')
-        self.editMenu.addAction(self.copyWeightsAction)
-        self.editMenu.addAction(self.pasteWeightsAction)
-        self.editMenu.addAction(self.pasteAveragedWeightsAction)
-
-        self.editMenu.addSection('Vertex Weight Blending')
-        self.editMenu.addAction(self.blendVerticesAction)
-        self.editMenu.addAction(self.blendBetweenVerticesAction)
-        self.editMenu.addAction(self.blendByDistanceAction)
-
-        self.editMenu.addSection('Modify Skin Cluster')
-        self.editMenu.addAction(self.resetIntermediateObjectAction)
-        self.editMenu.addAction(self.resetPreBindMatricesAction)
-
-        # Create settings menu
-        #
-        self.settingsMenu = QtWidgets.QMenu('&Settings', self.menuBar())
-        self.settingsMenu.setSeparatorsCollapsible(False)
-        self.settingsMenu.setTearOffEnabled(True)
-        self.settingsMenu.setWindowTitle('Settings')
-
-        self.mirrorAxisSeparator = QtWidgets.QAction('Mirror-Axis', self.editMenu)
-        self.mirrorAxisSeparator.setSeparator(True)
-
-        self.mirrorAxisGroup = QtWidgets.QActionGroup(self.editMenu)
-        self.mirrorAxisGroup.setExclusive(True)
-        self.mirrorAxisGroup.triggered.connect(self.mirrorAxisChanged)
-
-        self.xAction = QtWidgets.QAction('&X', self.editMenu)
-        self.xAction.setActionGroup(self.mirrorAxisGroup)
-        self.xAction.setCheckable(True)
-        self.xAction.setChecked(QtCore.Qt.CheckState.Checked)
-
-        self.yAction = QtWidgets.QAction('&Y', self.editMenu)
-        self.yAction.setActionGroup(self.mirrorAxisGroup)
-        self.yAction.setCheckable(True)
-
-        self.zAction = QtWidgets.QAction('&Z', self.editMenu)
-        self.zAction.setActionGroup(self.mirrorAxisGroup)
-        self.zAction.setCheckable(True)
-
-        self.setMirrorToleranceAction = QtWidgets.QAction('Set Mirror Threshold', self.settingsMenu)
-        self.setMirrorToleranceAction.triggered.connect(self.changeMirrorTolerance)
-
-        self.menuBar().addMenu(self.settingsMenu)
-        self.settingsMenu.addAction(self.mirrorAxisSeparator)
-        self.settingsMenu.addAction(self.xAction)
-        self.settingsMenu.addAction(self.yAction)
-        self.settingsMenu.addAction(self.zAction)
-        self.settingsMenu.addSection('Mirror Tolerance')
-        self.settingsMenu.addAction(self.setMirrorToleranceAction)
-
-        # Create debug menu
-        #
-        self.debugMenu = QtWidgets.QMenu('&Debug', self.menuBar())
-        self.debugMenu.setSeparatorsCollapsible(False)
-        self.debugMenu.setTearOffEnabled(True)
-        self.debugMenu.setWindowTitle('Debug')
-
-        self.resetPreBindMatricesAction = QtWidgets.QAction('&Reset Active Selection', self.editMenu)
-        self.resetPreBindMatricesAction.setCheckable(True)
-
-        self.menuBar().addMenu(self.debugMenu)
-        self.debugMenu.addAction(self.resetPreBindMatricesAction)
-
-        # Create help menu
-        #
-        self.helpMenu = QtWidgets.QMenu('&Help', self.menuBar())
-        self.helpMenu.setSeparatorsCollapsible(False)
-        self.helpMenu.setTearOffEnabled(True)
-        self.helpMenu.setWindowTitle('Help')
-
-        self.helpAction = QtWidgets.QAction('&Using Vertex Blender', self.helpMenu)
-        self.helpAction.triggered.connect(self.requestHelp)
-
-        self.menuBar().addMenu(self.helpMenu)
-        self.helpMenu.addAction(self.helpAction)
-
-        # Create toggle widgets
-        #
-        self.envelopeLayout = QtWidgets.QVBoxLayout()
-
-        self.envelopeGroupBox = QtWidgets.QGroupBox('')
-        self.envelopeGroupBox.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
-        self.envelopeGroupBox.setLayout(self.envelopeLayout)
-
-        self.envelopeButton = QtWidgets.QPushButton('Edit Envelope')
-        self.envelopeButton.setCheckable(True)
-        self.envelopeButton.toggled.connect(self.envelopeChanged)
-
-        self.envelopeLayout.addWidget(self.envelopeButton)
-        self.centralWidget().layout().addWidget(self.envelopeGroupBox)
-
-        # Set style sheet for toggle button
-        #
-        self.envelopeButton.setStyleSheet(
-            'QPushButton:hover:checked {\n' +
-            '   background-color: crimson;\n' +
-            '}\n' +
-            'QPushButton:checked {\n' +
-            '   background-color: firebrick;\n' +
-            '   border: none;\n' +
-            '}'
-        )
-
-        # Create main splitter
-        #
-        self.centralSplitter = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
-        self.centralWidget().layout().addWidget(self.centralSplitter)
-
-        # Add influences table widget
-        #
-        self.influenceLayout = QtWidgets.QVBoxLayout()
-
-        self.influenceGrpBox = QtWidgets.QGroupBox('Influences:')
-        self.influenceGrpBox.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
-        self.influenceGrpBox.setMinimumWidth(130)
-        self.influenceGrpBox.setLayout(self.influenceLayout)
-
-        self.influenceTable = qinfluenceview.QInfluenceView()
-        self.influenceTable.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        self.influenceTable.horizontalHeader().setStretchLastSection(True)
-        self.influenceTable.verticalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Fixed)
-
-        self.influenceModel = QtGui.QStandardItemModel(0, 1, parent=self.influenceTable)
-        self.influenceModel.setHorizontalHeaderLabels(['Influences'])
-
-        self.influenceFilterModel = qinfluencefiltermodel.QInfluenceFilterModel(parent=self.influenceTable)
-        self.influenceFilterModel.setSourceModel(self.influenceModel)
-        self.influenceTable.setModel(self.influenceFilterModel)
-
-        self.influenceTable.selectionModel().selectionChanged.connect(self.currentInfluenceChanged)
-
-        self.searchBox = QtWidgets.QLineEdit('')
-        self.searchBox.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
-        self.searchBox.setFixedHeight(23)
-        self.searchBox.textChanged.connect(self.searchChanged)
-        self.searchBox.returnPressed.connect(self.searchPressed)
-
-        self.searchBtn = QtWidgets.QPushButton(qiconlibrary.getIconByName('search'), '')
-        self.searchBtn.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
-        self.searchBtn.setFixedSize(QtCore.QSize(23, 23))
-        self.searchBtn.clicked.connect(self.searchPressed)
-
-        self.searchLayout = QtWidgets.QHBoxLayout()
-        self.searchLayout.addWidget(self.searchBox)
-        self.searchLayout.addWidget(self.searchBtn)
-
-        self.manageLayout = QtWidgets.QHBoxLayout()
-
-        self.addInfluencesBtn = QtWidgets.QPushButton('Add')
-        self.addInfluencesBtn.clicked.connect(self.addInfluences)
-
-        self.removeInfluenceBtn = QtWidgets.QPushButton('Remove')
-        self.removeInfluenceBtn.clicked.connect(self.removeInfluences)
-
-        self.manageLayout.addWidget(self.addInfluencesBtn)
-        self.manageLayout.addWidget(self.removeInfluenceBtn)
-
-        self.influenceLayout.addLayout(self.searchLayout)
-        self.influenceLayout.addWidget(self.influenceTable)
-        self.influenceLayout.addLayout(self.manageLayout)
-
-        self.centralSplitter.addWidget(self.influenceGrpBox)
-
-        # Create splitter layout for weight table
-        #
-        self.weightSplitter = QtWidgets.QSplitter(QtCore.Qt.Vertical)
-        self.weightSplitter.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
-        self.weightSplitter.setMinimumWidth(230)
-
-        self.centralSplitter.addWidget(self.weightSplitter)
-
-        # Create weight table
-        #
-        self.weightLayout = QtWidgets.QVBoxLayout()
-
-        self.weightGrpBox = QtWidgets.QGroupBox('Weights:')
-        self.weightGrpBox.setLayout(self.weightLayout)
-
-        self.weightTable = qinfluenceview.QInfluenceView()
-        self.weightTable.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        self.weightTable.doubleClicked.connect(self.doubleClicked)
-        self.weightTable.customContextMenuRequested.connect(self.requestCustomContextMenu)
-
-        self.weightModel = QtGui.QStandardItemModel(0, 2, parent=self.weightTable)
-        self.weightModel.setHorizontalHeaderLabels(['Joint', 'Weight'])
-
-        self.weightFilterModel = qinfluencefiltermodel.QInfluenceFilterModel(parent=self.weightTable)
-        self.weightFilterModel.setSourceModel(self.weightModel)
-        self.weightTable.setModel(self.weightFilterModel)
-
-        self.weightTable.setColumnWidth(1, 64)
-        self.weightTable.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.Fixed)
-        self.weightTable.horizontalHeader().setStretchLastSection(False)
-        self.weightTable.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
-
-        # Define sibling relationship
-        #
-        self.influenceTable.setSibling(self.weightTable)
-        self.weightTable.setSibling(self.influenceTable)
-
-        # Create popup menu widget
-        #
-        self.popupMenu = QtWidgets.QMenu(self)
-
-        self.selectVerticesAction = self.popupMenu.addAction('&Select Affected Vertices')
-        self.selectVerticesAction.triggered.connect(self.selectAffectedVertices)
-
-        # Create optional mode widgets
-        #
-        self.modeLayout = QtWidgets.QHBoxLayout()
-
-        self.precisionCheckBox = QtWidgets.QCheckBox('Precision Mode')
-        self.precisionCheckBox.toggled.connect(self.precisionChanged)
-
-        self.selectShellCheckBox = QtWidgets.QCheckBox('Select Shell')
-        self.selectShellCheckBox.toggled.connect(self.selectShellChanged)
-
-        self.modeLayout.addWidget(self.precisionCheckBox)
-        self.modeLayout.addWidget(self.selectShellCheckBox)
-
-        self.weightLayout.addWidget(self.weightTable)
-        self.weightLayout.addLayout(self.modeLayout)
-
-        self.weightSplitter.addWidget(self.weightGrpBox)
-
-        # Create options widgets
-        #
-        self.optionsLayout = QtWidgets.QVBoxLayout()
-
-        self.optionsGrpBox = QtWidgets.QGroupBox('Options:')
-        self.optionsGrpBox.setLayout(self.optionsLayout)
-
-        self.mirrorLayout = QtWidgets.QHBoxLayout()
-
-        self.mirrorButton = QtWidgets.QPushButton('Mirror')
-        self.mirrorButton.clicked.connect(partial(self.mirrorWeights, False))
-
-        self.pullButton = QtWidgets.QPushButton('Pull')
-        self.pullButton.clicked.connect(partial(self.mirrorWeights, True))
-
-        self.mirrorLayout.addWidget(self.mirrorButton)
-        self.mirrorLayout.addWidget(self.pullButton)
-
-        self.optionsLayout.addLayout(self.mirrorLayout)
-
-        self.weightSplitter.addWidget(self.optionsGrpBox)
-
-        # Create slab paste widgets
-        #
-        self.slabButton = QtWidgets.QPushButton('Slab')
-        self.slabButton.clicked.connect(self.slabPasteWeights)
-
-        self.slabOptions = QtWidgets.QPushButton()
-        self.slabOptions.setFixedWidth(18)
-        self.slabOptions.setLayoutDirection(QtCore.Qt.RightToLeft)
-
-        self.slabLayout = QtWidgets.QHBoxLayout()
-        self.slabLayout.setSpacing(2)
-        self.slabLayout.addWidget(self.slabButton)
-        self.slabLayout.addWidget(self.slabOptions)
-
-        self.slabMenu = QtWidgets.QMenu(self.slabOptions)
-
-        self.slabGroup = QtWidgets.QActionGroup(self.slabButton)
+        self.slabGroup = QtWidgets.QActionGroup(self.slabMenu)
         self.slabGroup.setExclusive(True)
-        self.slabGroup.triggered.connect(self.slabOptionChanged)
+        self.slabGroup.triggered.connect(self.on_slabGroup_triggered)
 
         self.closestPointAction = self.slabMenu.addAction('&Closest Point')
         self.closestPointAction.setCheckable(True)
@@ -431,430 +232,86 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         self.slabGroup.addAction(self.nearestNeighbourAction)
         self.slabGroup.addAction(self.alongNormalAction)
 
-        self.slabOptions.setMenu(self.slabMenu)
-
-        self.mirrorLayout.addLayout(self.slabLayout)
-
-        # Create set weight preset widgets
-        #
-        self.presetLayout = QtWidgets.QHBoxLayout()
-
-        self.presetBtn1 = QtWidgets.QPushButton('0', self.optionsGrpBox)
-        self.presetBtn1.clicked.connect(partial(self.applyPreset, 0.0))
-        self.presetBtn2 = QtWidgets.QPushButton('.1', self.optionsGrpBox)
-        self.presetBtn2.clicked.connect(partial(self.applyPreset, 0.1))
-        self.presetBtn3 = QtWidgets.QPushButton('.25', self.optionsGrpBox)
-        self.presetBtn3.clicked.connect(partial(self.applyPreset, 0.25))
-        self.presetBtn4 = QtWidgets.QPushButton('.5', self.optionsGrpBox)
-        self.presetBtn4.clicked.connect(partial(self.applyPreset, 0.5))
-        self.presetBtn5 = QtWidgets.QPushButton('.75', self.optionsGrpBox)
-        self.presetBtn5.clicked.connect(partial(self.applyPreset, 0.75))
-        self.presetBtn6 = QtWidgets.QPushButton('.9', self.optionsGrpBox)
-        self.presetBtn6.clicked.connect(partial(self.applyPreset, 0.9))
-        self.presetBtn7 = QtWidgets.QPushButton('1', self.optionsGrpBox)
-        self.presetBtn7.clicked.connect(partial(self.applyPreset, 1.0))
-
-        self.presetLayout.addWidget(self.presetBtn1)
-        self.presetLayout.addWidget(self.presetBtn2)
-        self.presetLayout.addWidget(self.presetBtn3)
-        self.presetLayout.addWidget(self.presetBtn4)
-        self.presetLayout.addWidget(self.presetBtn5)
-        self.presetLayout.addWidget(self.presetBtn6)
-        self.presetLayout.addWidget(self.presetBtn7)
-
-        self.optionsLayout.addLayout(self.presetLayout)
-
-        # Create set weight widgets
-        #
-        self.setterLayout = QtWidgets.QHBoxLayout()
-
-        self.setterLabel = QtWidgets.QLabel(self.optionsGrpBox)
-        self.setterLabel.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
-        self.setterLabel.setFixedSize(QtCore.QSize(72, 23))
-        self.setterLabel.setText('Set Weight:')
-        self.setterLabel.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
-
-        self.setterSpinBox = QtWidgets.QDoubleSpinBox(self.optionsGrpBox)
-        self.setterSpinBox.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
-        self.setterSpinBox.setFixedHeight(23)
-        self.setterSpinBox.setMinimum(0.0)
-        self.setterSpinBox.setMaximum(1.0)
-        self.setterSpinBox.setValue(0.05)
-        self.setterSpinBox.setSingleStep(0.01)
-        self.setterSpinBox.setAlignment(QtCore.Qt.AlignHCenter)
-
-        self.setterBtn = QtWidgets.QPushButton('Apply', self.optionsGrpBox)
-        self.setterBtn.setSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
-        self.setterBtn.setFixedHeight(23)
-        self.setterBtn.clicked.connect(partial(self.setWeights))
-
-        self.setterLayout.addWidget(self.setterLabel)
-        self.setterLayout.addWidget(self.setterSpinBox)
-        self.setterLayout.addWidget(self.setterBtn)
-
-        self.optionsLayout.addLayout(self.setterLayout)
-
-        # Create increment weight widgets
-        #
-        self.incrementLayout = QtWidgets.QHBoxLayout()
-
-        self.incrementLbl = QtWidgets.QLabel(self.optionsGrpBox)
-        self.incrementLbl.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
-        self.incrementLbl.setFixedSize(QtCore.QSize(72, 23))
-        self.incrementLbl.setText('Increment By:')
-        self.incrementLbl.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
-
-        self.incrementSpinBox = QtWidgets.QDoubleSpinBox(self.optionsGrpBox)
-        self.incrementSpinBox.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
-        self.incrementSpinBox.setFixedHeight(23)
-        self.incrementSpinBox.setMinimum(0.0)
-        self.incrementSpinBox.setMaximum(1.0)
-        self.incrementSpinBox.setValue(0.05)
-        self.incrementSpinBox.setSingleStep(0.01)
-        self.incrementSpinBox.setAlignment(QtCore.Qt.AlignHCenter)
-
-        self.incrementBtn1 = QtWidgets.QPushButton('+', self.optionsGrpBox)
-        self.incrementBtn1.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
-        self.incrementBtn1.setFixedSize(QtCore.QSize(23, 23))
-        self.incrementBtn1.clicked.connect(partial(self.incrementWeights, False))
-
-        self.incrementBtn2 = QtWidgets.QPushButton('-', self.optionsGrpBox)
-        self.incrementBtn2.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
-        self.incrementBtn2.setFixedSize(QtCore.QSize(23, 23))
-        self.incrementBtn2.clicked.connect(partial(self.incrementWeights, True))
-
-        self.incrementLayout.addWidget(self.incrementLbl)
-        self.incrementLayout.addWidget(self.incrementSpinBox)
-        self.incrementLayout.addWidget(self.incrementBtn1)
-        self.incrementLayout.addWidget(self.incrementBtn2)
-
-        self.optionsLayout.addLayout(self.incrementLayout)
-
-        # Create scale weights widgets
-        #
-        self.scaleLayout = QtWidgets.QHBoxLayout()
-
-        self.scaleLabel = QtWidgets.QLabel(self.optionsGrpBox)
-        self.scaleLabel.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
-        self.scaleLabel.setFixedSize(QtCore.QSize(72, 23))
-        self.scaleLabel.setText('Scale Weight:')
-        self.scaleLabel.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
-
-        self.scaleSpinBox = QtWidgets.QDoubleSpinBox(self.optionsGrpBox)
-        self.scaleSpinBox.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
-        self.scaleSpinBox.setFixedHeight(23)
-        self.scaleSpinBox.setMinimum(0.0)
-        self.scaleSpinBox.setMaximum(1.0)
-        self.scaleSpinBox.setValue(0.1)
-        self.scaleSpinBox.setSingleStep(0.01)
-        self.scaleSpinBox.setAlignment(QtCore.Qt.AlignHCenter)
-
-        self.scaleButton1 = QtWidgets.QPushButton('+', self.optionsGrpBox)
-        self.scaleButton1.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
-        self.scaleButton1.setFixedSize(QtCore.QSize(23, 23))
-        self.scaleButton1.clicked.connect(partial(self.scaleWeights, False))
-
-        self.scaleButton2 = QtWidgets.QPushButton('-', self.optionsGrpBox)
-        self.scaleButton2.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
-        self.scaleButton2.setFixedSize(QtCore.QSize(23, 23))
-        self.scaleButton2.clicked.connect(partial(self.scaleWeights, True))
-
-        self.scaleLayout.addWidget(self.scaleLabel)
-        self.scaleLayout.addWidget(self.scaleSpinBox)
-        self.scaleLayout.addWidget(self.scaleButton1)
-        self.scaleLayout.addWidget(self.scaleButton2)
-
-        self.optionsLayout.addLayout(self.scaleLayout)
-
-    def closeEvent(self, event):
+    def postLoad(self):
         """
-        Event method called after the window has been closed.
+        Called after the user interface has been loaded.
 
-        :type event: QtGui.QCloseEvent
         :rtype: None
         """
 
-        # Exit envelope mode
+        # Initialize influence item model
         #
-        self.envelopeButton.setChecked(False)
+        self.influenceItemModel = qinfluenceitemmodel.QInfluenceItemModel(parent=self.influenceTable)
+        self.skinChanged.connect(self.influenceItemModel.setSkin)
 
-        # Call parent method
+        self.influenceItemFilterModel = qinfluenceitemfiltermodel.QInfluenceItemFilterModel(parent=self.influenceTable)
+        self.influenceItemFilterModel.setSourceModel(self.influenceItemModel)
+        self.influenceTable.setModel(self.influenceItemFilterModel)
+
+        # Initialize weight item model
         #
-        return super(QVertexBlender, self).closeEvent(event)
+        self.weightItemModel = qweightitemmodel.QWeightItemModel(parent=self.weightTable)
+        self.skinChanged.connect(self.weightItemModel.setSkin)
+        self.vertexSelectionChanged.connect(self.weightItemModel.setVertexSelection)
 
-    @property
-    def skin(self):
+        self.weightItemFilterModel = qweightitemfiltermodel.QWeightItemFilterModel(parent=self.weightTable)
+        self.weightItemFilterModel.setSourceModel(self.weightItemModel)
+        self.weightTable.setModel(self.weightItemFilterModel)
+
+        # Set table buddies
+        #
+        self.influenceTable.setBuddy(self.weightTable)
+        self.influenceTable.horizontalHeader().setStretchLastSection(True)
+
+        self.weightTable.setBuddy(self.influenceTable)
+        self.weightTable.horizontalHeader().setStretchLastSection(True)
+
+        self.slabToolButton.setMenu(self.slabMenu)
+
+        # Assign button group ids
+        #
+        self.mirrorWeightButtonGroup.setId(self.mirrorPushButton, 0)
+        self.mirrorWeightButtonGroup.setId(self.pullPushButton, 1)
+
+        self.weightPresetButtonGroup.setId(self.weightPresetPushButton1, 0)
+        self.weightPresetButtonGroup.setId(self.weightPresetPushButton2, 1)
+        self.weightPresetButtonGroup.setId(self.weightPresetPushButton3, 2)
+        self.weightPresetButtonGroup.setId(self.weightPresetPushButton4, 3)
+        self.weightPresetButtonGroup.setId(self.weightPresetPushButton5, 4)
+        self.weightPresetButtonGroup.setId(self.weightPresetPushButton6, 5)
+        self.weightPresetButtonGroup.setId(self.weightPresetPushButton7, 6)
+
+        self.incrementWeightButtonGroup.setId(self.incrementWeightPushButton1, 0)  # +
+        self.incrementWeightButtonGroup.setId(self.incrementWeightPushButton2, 1)  # -
+
+        self.scaleWeightButtonGroup.setId(self.scaleWeightPushButton1, 0)  # +
+        self.scaleWeightButtonGroup.setId(self.scaleWeightPushButton2, 1)  # -
+
+    def saveSettings(self):
         """
-        Getter method used to retrieve the selected skin cluster object.
+        Saves the user settings.
 
-        :rtype: fnskin.FnSkin
-        """
-
-        return self._skin
-
-    def envelopeChanged(self, checked):
-        """
-        Slot method called whenever the user clicks the edit envelope button.
-
-        :type checked: bool
         :rtype: None
         """
 
-        # Reset standard item models
-        #
-        self.influenceModel.setRowCount(0)
-        self.weightModel.setRowCount(0)
+        self.settings.setValue('editor/mirrorAxis', self.mirrorAxis)
+        self.settings.setValue('editor/mirrorTolerance', self.mirrorTolerance)
+        self.settings.setValue('editor/blendByDistance', self.blendByDistance)
 
-        # Check if envelope is checked
-        #
-        sender = self.sender()
-        fnNotify = fnnotify.FnNotify()
-
-        if checked:
-
-            # Evaluate active selection
-            # If nothing is selected then uncheck button
-            #
-            selection = fnskin.FnSkin.getActiveSelection()
-            selectionCount = len(selection)
-
-            if selectionCount == 0:
-
-                sender.setChecked(False)
-                return
-
-            # Try and set object
-            # If selected node is invalid then uncheck button
-            #
-            success = self.skin.trySetObject(selection[0])
-
-            if not success:
-
-                sender.setChecked(False)
-                return
-
-            # Add callbacks
-            #
-            self._selectionChangedId = fnNotify.addSelectionChangedNotify(self.activeSelectionChanged)
-            self._undoId = fnNotify.addUndoNotify(self.invalidateColors)
-            self._redoId = fnNotify.addRedoNotify(self.invalidateColors)
-
-            # Enable vertex colour display
-            #
-            self.skin.showColors()
-
-            # Invalidate window
-            #
-            self.invalidateInfluences()
-            self.invalidateWeights()
-            self.invalidateColors()
-            self.influenceTable.selectFirstRow()
-
-        else:
-
-            # Check if function set still has an object attached
-            # If so then we need to reset it and remove the previous callbacks
-            #
-            if self.skin.isValid():
-
-                # Remove callbacks
-                #
-                self._selectionChangedId = fnNotify.removeNotify(self._selectionChangedId)
-                self._undoId = fnNotify.removeNotify(self._undoId)
-                self._redoId = fnNotify.removeNotify(self._redoId)
-
-                # Reset object
-                #
-                self.skin.hideColors()
-                self.skin.resetObject()
-
-    @property
-    def precision(self):
+    def loadSettings(self):
         """
-        Method used to check if precision mode is enabled.
+        Loads the user settings.
 
-        :rtype: bool
-        """
-
-        return self._precision
-
-    def precisionChanged(self, precision):
-        """
-        Slot method called whenever the user changes the precision check box.
-        This method will update the behaviour of the table widgets.
-
-        :type precision: bool
         :rtype: None
         """
 
-        # Assign private property
-        #
-        self._precision = precision
+        mirrorAxis = self.settings.value('editor/mirrorAxis', defaultValue='0', type=int)
+        self.mirrorAxisActionGroup.actions()[mirrorAxis].setChecked(True)
 
-        # Toggle auto select behaviour
-        #
-        if self._precision:
+        blendByDistance = self.settings.value('editor/blendByDistance', defaultValue='False', type=bool)
+        self.blendByDistanceAction.setChecked(blendByDistance)
 
-            # Change selection mode to extended
-            #
-            self.weightTable.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
-
-            # Disable auto select
-            #
-            self.influenceTable.setAutoSelect(False)
-            self.weightTable.setAutoSelect(False)
-
-        else:
-
-            # Change selection model to single
-            #
-            self.weightTable.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
-
-            # Enable auto select
-            #
-            self.influenceTable.setAutoSelect(True)
-            self.weightTable.setAutoSelect(True)
-
-            # Force synchronize
-            #
-            self.influenceTable.synchronize()
-
-    @property
-    def blendByDistance(self):
-        """
-        Getter method that returns the blend by distance flag.
-
-        :rtype: bool
-        """
-
-        return self._blendByDistance
-
-    def blendByDistanceChanged(self, checked=False):
-        """
-        Slot method called whenever the blend by distance check box is changed.
-
-        :type checked: bool
-        :rtype: None
-        """
-
-        self._blendByDistance = self.sender().isChecked()
-
-    @property
-    def selectShell(self):
-        """
-        Getter method that returns a flag that indicates if shells should be selected.
-
-        :rtype: bool
-        """
-
-        return self._selectShell
-
-    def selectShellChanged(self, selectShell):
-        """
-        Event for capturing any changes made to the select shell property.
-
-        :type selectShell: bool
-        :rtype: None
-        """
-
-        self._selectShell = selectShell
-
-    @property
-    def mirrorTolerance(self):
-        """
-        Getter method that returns the mirror tolerance.
-
-        :rtype: float
-        """
-
-        return float(self._settings.value('editor/mirrorTolerance', 1e-3))
-
-    @mirrorTolerance.setter
-    def mirrorTolerance(self, mirrorTolerance):
-        """
-        Setter method that updates the mirror tolerance.
-
-        :type mirrorTolerance: float
-        :rtype: None
-        """
-
-        self._settings.setValue('editor/mirrorTolerance', mirrorTolerance)
-
-    def changeMirrorTolerance(self):
-        """
-        Method used to update the internal mirroring threshold.
-        :rtype: None
-        """
-
-        # Define input dialog
-        #
-        threshold, ok = QtWidgets.QInputDialog.getDouble(
-            self,
-            'Set Mirror Threshold',
-            'Enter radius for closest point consideration:',
-            self.mirrorTolerance,
-            minValue=1e-3,
-            decimals=3
-        )
-
-        # Check dialog result before setting value
-        #
-        if ok:
-
-            self.mirrorTolerance = threshold
-
-        else:
-
-            log.info('Operation aborted...')
-
-    @property
-    def search(self):
-        """
-        Getter method that returns the search string.
-
-        :rtype: str
-        """
-
-        return self._search
-
-    def searchChanged(self, search):
-        """
-        Updates the user-defined search string.
-
-        :type search: str
-        :rtype: None
-        """
-
-        self._search = '*{search}*'.format(search=search)
-
-    def searchPressed(self, checked=False):
-        """
-        Forces the influence model to filter the visible influences.
-
-        :type checked: bool
-        :rtype: None
-        """
-
-        visible = self.influenceFilterModel.filterRowsByPattern(self.search)
-        self.influenceFilterModel.setVisible(*visible)
-
-    def vertexWeights(self):
-        """
-        Returns the vertex weights from the active selection.
-
-        :rtype: dict[int:dict[int:float]]
-        """
-
-        return self._vertexWeights
-
-    def weights(self):
-        """
-        Returns the averaged vertex weights from the active selection.
-
-        :rtype: dict[int:float]
-        """
-
-        return self._weights
+        self.mirrorTolerance = self.settings.value('editor/mirrorTolerance', defaultValue='1e-3', type=float)
 
     def selection(self):
         """
@@ -874,50 +331,28 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
         return self._softSelection
 
-    @validate
-    def activeSelectionChanged(self):
+    def vertexWeights(self):
         """
-        Callback method called whenever the active selection is changed.
+        Returns the vertex weights from the active selection.
 
-        :rtype: None
-        """
-
-        # Check if skin is selected
-        # If not then we don't need to invalidate
-        #
-        if self.skin.isPartiallySelected():
-
-            self.invalidateWeights()
-            self.invalidateColors()
-
-    def currentInfluenceChanged(self, selected, deselected):
-        """
-        Slot method called whenever the current influence is changed.
-
-        :type selected: QtCore.QItemSelection
-        :type deselected: QtCore.QItemSelection
-        :rtype: None
+        :rtype: dict[int:dict[int:float]]
         """
 
-        # Get selected rows from table
-        #
-        rows = self.influenceTable.selectedRows()
-        numRows = len(rows)
+        return self.weightItemModel.vertexWeights()
 
-        if numRows == 1:
+    def weights(self):
+        """
+        Returns the averaged vertex weights from the active selection.
 
-            # Update current influence
-            #
-            self._currentInfluence = rows[0]
+        :rtype: dict[int:float]
+        """
 
-            # Select influence and redraw
-            #
-            self.skin.selectInfluence(self._currentInfluence)
-            self.invalidateColors()
+        return self.weightItemModel.weights()
 
     def currentInfluence(self):
         """
-        Property method for getting the active influence.
+        Returns the current influence ID.
+
         :rtype: int
         """
 
@@ -971,61 +406,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         :rtype: None
         """
 
-        # Retrieve influence objects
-        #
-        influences = self.skin.influences()
-
-        # Reset header labels
-        #
-        rowCount = influences.lastIndex() + 1
-        labels = map(str, range(rowCount))
-
-        self.influenceModel.setRowCount(rowCount)
-        self.influenceModel.setVerticalHeaderLabels(labels)
-
-        self.weightModel.setRowCount(rowCount)
-        self.weightModel.setVerticalHeaderLabels(labels)
-
-        # Assign influence items
-        #
-        fnInfluence = fnnode.FnNode()
-        influenceIds = []
-
-        for influenceId in range(rowCount):
-
-            # Check if influence is valid
-            #
-            influence = influences[influenceId]
-
-            success = fnInfluence.trySetObject(influence)
-            influenceName = ''
-
-            if success:
-
-                influenceName = fnInfluence.name()
-                influenceIds.append(influenceId)
-
-            else:
-
-                log.debug('No influence object found at ID: %s.' % influenceId)
-
-            # Create influence table item
-            #
-            influenceItem = self.createStandardItem(influenceName)
-            self.influenceModel.setItem(influenceId, influenceItem)
-
-            # Create weights table items
-            #
-            nameItem = self.createStandardItem(influenceName)
-            weightItem = self.createStandardItem('0.0')
-
-            self.weightModel.setItem(influenceId, 0, nameItem)
-            self.weightModel.setItem(influenceId, 1, weightItem)
-
-        # Invalidate influence table
-        #
-        self.influenceFilterModel.setVisible(*influenceIds)
-        self.influenceTable.selectFirstRow()
+        self.influenceItemModel.invalidateInfluences()
 
     @validate
     def invalidateWeights(self, *args, **kwargs):
@@ -1034,55 +415,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         :rtype: None
         """
 
-        # Get active selection
-        #
-        self._softSelection = self.skin.softSelection()
-
-        selection = list(self._softSelection.keys())
-        selectionCount = len(selection)
-
-        # Store selected weights
-        #
-        self._vertexWeights = self.skin.vertexWeights(*selection)
-
-        if selectionCount == 0:
-
-            self._weights = {}
-
-        elif selectionCount == 1:
-
-            self._weights = self._vertexWeights[selection[0]]
-
-        if selectionCount > 1:
-
-            self._weights = self.skin.averageWeights(*list(self._vertexWeights.values()), maintainMaxInfluences=False)
-
-        # Check if there any values
-        #
-        numWeights = len(self._weights)
-
-        if numWeights > 0:
-
-            # Iterate through rows
-            #
-            numRows = self.weightModel.rowCount()
-
-            for i in range(numRows):
-
-                index = self.weightModel.index(i, 1)
-                item = self.weightModel.itemFromIndex(index)
-
-                weight = self._weights.get(i, 0.0)
-                item.setText('%s' % round(weight, 3))
-
-            # Invalidate filter model
-            #
-            influenceIds = self._weights.keys()
-            self.weightFilterModel.setVisible(*influenceIds)
-
-        else:
-
-            log.debug('No vertex weights supplied to invalidate filter model.')
+        self.weightItemModel.invalidateWeights()
 
     @validate
     def invalidateColors(self, *args, **kwargs):
@@ -1093,22 +426,54 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         """
 
         self.skin.invalidateColors()
+    # endregion
 
+    # region Callbacks
     @validate
-    def requestInfluenceChange(self):
+    def activeSelectionChanged(self):
         """
-        External method used to change the active influence on the skin cluster node.
-        A custom MPxCommand will need to be loaded for this method to work!
+        Callback method used to invalidate the active selection.
 
         :rtype: None
         """
 
-        self.skin.selectInfluence(self.currentInfluence())
+        # Check if skin is selected
+        # If not then we don't need to invalidate
+        #
+        if self.skin.isPartiallySelected():
 
-    def saveWeights(self):
+            self._softSelection = self.skin.softSelection()
+            self._selection = list(self._softSelection.keys())
+
+            self.vertexSelectionChanged.emit(self._selection)
+            self.invalidateColors()
+    # endregion
+
+    # region Events
+    def closeEvent(self, event):
         """
-        Saves the skin weights from the active selection.
+        Event method called after the window has been closed.
 
+        :type event: QtGui.QCloseEvent
+        :rtype: None
+        """
+
+        # Exit envelope mode
+        #
+        self.editEnvelopePushButton.setChecked(False)
+
+        # Call parent method
+        #
+        return super(QVertexBlender, self).closeEvent(event)
+    # endregion
+
+    # region Slots
+    @QtCore.Slot(bool)
+    def on_saveWeightsAction_triggered(self, checked=False):
+        """
+        Triggered slot method responsible for prompting the save weights dialog.
+
+        :type checked: bool
         :rtype: None
         """
 
@@ -1127,10 +492,19 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
         elif selectionCount == 1:
 
+            # Initialize skin function set
+            #
+            success = fnSkin.trySetObject(selection[0])
+
+            if not success:
+
+                log.warning('Invalid selection...')
+                return
+
             # Concatenate default file path
             #
             directory = fnScene.currentDirectory()
-            shapeName = fnnode.FnNode(self.skin.shape()).name()
+            shapeName = fnnode.FnNode(fnSkin.shape()).name()
 
             defaultFilePath = os.path.join(directory, '{name}.json'.format(name=shapeName))
 
@@ -1143,21 +517,15 @@ class QVertexBlender(qproxywindow.QProxyWindow):
                 'All JSON Files (*.json)'
             )
 
-            # Check if a file was specified
-            #
-            if len(filePath) == 0:
-
-                log.info('Operation aborted...')
-                return
-
-            # Try and save weights
-            #
-            success = fnSkin.trySetObject(selection[0])
-
-            if success:
+            if len(filePath) > 0:
 
                 log.info('Saving weights to: %s' % filePath)
                 fnSkin.saveWeights(filePath)
+
+            else:
+
+                log.info('Operation aborted...')
+                return
 
         else:
 
@@ -1197,10 +565,12 @@ class QVertexBlender(qproxywindow.QProxyWindow):
                 log.info('Saving weights to: %s' % filePath)
                 fnSkin.saveWeights(filePath)
 
-    def loadWeights(self):
+    @QtCore.Slot(bool)
+    def on_loadWeightsAction_triggered(self, checked=False):
         """
-        Loads skin weights onto the active selection.
+        Triggered slot method responsible for prompting the load weights dialog.
 
+        :type checked: bool
         :rtype: None
         """
 
@@ -1237,11 +607,12 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
             log.info('Operation aborted...')
 
-    @validate
-    def resetIntermediateObject(self):
+    @QtCore.Slot(bool)
+    def on_resetIntermediateObjectAction_triggered(self, checked=False):
         """
-        Bakes the current pose into the skin cluster.
+        Triggered slot method responsible for prompting the reset intermediate object dialog.
 
+        :type checked: bool
         :rtype: bool
         """
 
@@ -1257,13 +628,14 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
         if reply == QtWidgets.QMessageBox.Yes:
 
-            self.resetIntermediateObject()
+            self.on_resetIntermediateObjectAction_triggered()
 
-    @validate
-    def resetBindPreMatrices(self):
+    @QtCore.Slot(bool)
+    def on_resetBindPreMatricesAction_triggered(self, checked=False):
         """
-        Resets the bind-pre matrices on the skin cluster.
+        Triggered slot method responsible for prompting the reset bind-pre matrices dialog.
 
+        :type checked: bool
         :rtype: bool
         """
 
@@ -1281,21 +653,274 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
             self.skin.resetPreBindMatrices()
 
-    def requestCustomContextMenu(self, point):
+    @QtCore.Slot(bool)
+    def on_blendByDistanceAction_triggered(self, checked=False):
+        """
+        Triggered slot method responsible for updating the internal blend by distance flag.
+
+        :type checked: bool
+        :rtype: None
+        """
+
+        self._blendByDistance = checked
+
+    @QtCore.Slot(bool)
+    def on_setMirrorToleranceAction_triggered(self, checked=False):
+        """
+        Triggered slot method responsible for updating the internal mirror tolerance.
+
+        :type checked: bool
+        :rtype: None
+        """
+
+        # Define input dialog
+        #
+        threshold, ok = QtWidgets.QInputDialog.getDouble(
+            self,
+            'Set Mirror Threshold',
+            'Enter radius for closest point consideration:',
+            self.mirrorTolerance,
+            minValue=1e-3,
+            decimals=3
+        )
+
+        # Check dialog result before setting value
+        #
+        if ok:
+
+            self.mirrorTolerance = threshold
+
+        else:
+
+            log.info('Operation aborted...')
+
+    @QtCore.Slot(bool)
+    def on_copyWeightsAction_triggered(self, checked=False):
+        """
+        Triggered slot method responsible for copying skin weights from the active selection.
+
+        :type checked: bool
+        :rtype: None
+        """
+
+        self.skin.copyWeights()
+
+    @QtCore.Slot(bool)
+    def on_pasteWeightsAction_triggered(self, checked=False):
+        """
+        Triggered slot method responsible for pasting skin weights to the active selection.
+
+        :type checked: bool
+        :rtype: None
+        """
+
+        if self.skin.isValid():
+
+            self.skin.pasteWeights()
+            self.invalidateWeights()
+            self.invalidateColors()
+
+    @QtCore.Slot(bool)
+    def on_pasteAveragedWeightsAction_triggered(self, checked=False):
+        """
+        Triggered slot method responsible for pasting averaged skin weights to the active selection.
+
+        :type checked: bool
+        :rtype: None
+        """
+
+        if self.skin.isValid():
+
+            self.skin.pasteAveragedWeights()
+            self.invalidateWeights()
+            self.invalidateColors()
+
+    @QtCore.Slot(bool)
+    def on_blendVerticesAction_triggered(self, checked=False):
+        """
+        Triggered slot method responsible for blending the active selection.
+
+        :type checked: bool
+        :rtype: None
+        """
+
+        self.skin.blendVertices(self.selection())
+
+        self.invalidateWeights()
+        self.invalidateColors()
+
+    @QtCore.Slot(bool)
+    def on_blendBetweenVerticesAction_triggered(self, checked=False):
+        """
+        Triggered slot method responsible for blending between vertex pairs.
+
+        :type checked: bool
+        :rtype: None
+        """
+
+        self.skin.blendBetweenVertices(self.selection(), blendByDistance=self.blendByDistance)
+
+        self.invalidateWeights()
+        self.invalidateColors()
+
+    @QtCore.Slot(bool)
+    def on_editEnvelopePushButton_toggled(self, checked):
+        """
+        Toggled slot method called whenever the user enters edit envelope mode.
+
+        :type checked: bool
+        :rtype: None
+        """
+
+        # Check if envelope is checked
+        #
+        sender = self.sender()
+        fnNotify = fnnotify.FnNotify()
+
+        if checked:
+
+            # Evaluate active selection
+            # If nothing is selected then uncheck button
+            #
+            selection = fnskin.FnSkin.getActiveSelection()
+            selectionCount = len(selection)
+
+            if selectionCount == 0:
+
+                sender.setChecked(False)
+                return
+
+            # Try and set object
+            # If selected node is invalid then exit envelope mode
+            #
+            success = self.skin.trySetObject(selection[0])
+
+            if not success:
+
+                sender.setChecked(False)
+                return
+
+            # Add callbacks
+            #
+            self._selectionChangedId = fnNotify.addSelectionChangedNotify(self.activeSelectionChanged)
+            self._undoId = fnNotify.addUndoNotify(self.invalidateColors)
+            self._redoId = fnNotify.addRedoNotify(self.invalidateColors)
+
+            # Enable vertex colour display
+            #
+            self.skinChanged.emit(self.skin.object())
+            self.skin.showColors()
+
+            self.invalidateWeights()
+            self.invalidateColors()
+
+            # Select first influence
+            #
+            self.influenceTable.selectFirstRow()
+
+        else:
+
+            # Check if function set still has an object attached
+            # If so then we need to reset it and remove the previous callbacks
+            #
+            if self.skin.isValid():
+
+                # Remove callbacks
+                #
+                self._selectionChangedId = fnNotify.removeNotify(self._selectionChangedId)
+                self._undoId = fnNotify.removeNotify(self._undoId)
+                self._redoId = fnNotify.removeNotify(self._redoId)
+
+                # Reset object
+                #
+                self.skin.hideColors()
+                self.skin.resetObject()
+
+            # Signal skin has changed
+            #
+            self.skinChanged.emit(None)
+
+    @QtCore.Slot()
+    def on_searchLineEdit_editingFinished(self):
+        """
+        Editing finished slot method called whenever the user is done editing the search field.
+        This search value will be passed to the filter model.
+
+        :rtype: None
+        """
+
+        text = self.sender().text()
+        filterWildcard = '*{text}*'.format(text=text)
+
+        self.influenceItemFilterModel.setFilterWildcard(filterWildcard)
+
+    @QtCore.Slot(bool)
+    def on_addInfluencePushButton_clicked(self, checked=False):
+        """
+        Clicked slot method responsible for showing the add influence dialog.
+
+        :type checked: bool
+        :rtype: None
+        """
+
+        qeditinfluencesdialog.addInfluences(self.skin.object())
+        self.invalidateInfluences()
+
+    @QtCore.Slot(bool)
+    def on_removeInfluencePushButton_clicked(self, checked=False):
+        """
+        Clicked slot method responsible for showing the remove influence dialog.
+
+        :type checked: bool
+        :rtype: None
+        """
+
+        qeditinfluencesdialog.removeInfluences(self.skin.object())
+        self.invalidateInfluences()
+
+    @QtCore.Slot(QtCore.QItemSelection, QtCore.QItemSelection)
+    def on_influenceTable_selectionChanged(self, selected, deselected):
+        """
+        Selection changed slot method responsible for updating the internal tracker.
+
+        :type selected: QtCore.QItemSelection
+        :type deselected: QtCore.QItemSelection
+        :rtype: None
+        """
+
+        # Get selected rows from table
+        #
+        rows = self.influenceTable.selectedRows()
+        numRows = len(rows)
+
+        if numRows == 1:
+
+            # Update current influence
+            #
+            self._currentInfluence = rows[0]
+
+            # Select influence and redraw
+            #
+            self.skin.selectInfluence(self._currentInfluence)
+            self.invalidateColors()
+
+    @QtCore.Slot(QtCore.QPoint)
+    def on_weightTable_customContextMenuRequested(self, point):
         """
         Trigger function used to display a context menu under certain conditions.
         :type point: QtCore.QPoint
         :rtype: None
         """
 
-        numRows = self.weightModel.rowCount()
+        numRows = self.weightItemModel.rowCount()
         hasSelection = self.weightTable.selectionModel().hasSelection()
 
         if numRows > 1 and hasSelection:
 
-            return self.popupMenu.exec_(self.weightTable.mapToGlobal(point))
+            return self.weightTableMenu.exec_(self.weightTable.mapToGlobal(point))
 
-    def doubleClicked(self, index):
+    @QtCore.Slot(QtCore.QModelIndex)
+    def on_weightTable_doubleClicked(self, index):
         """
         Selects the text value from the opposite table.
 
@@ -1305,169 +930,75 @@ class QVertexBlender(qproxywindow.QProxyWindow):
 
         # Map index to filter model
         #
-        index = self.weightFilterModel.mapToSource(index)
+        index = self.weightItemFilterModel.mapToSource(index)
 
         # Get row from remapped index
         #
         row = index.row()
         column = index.column()
 
-        text = self.weightModel.item(row, column).text()
+        text = self.weightItemModel.item(row, column).text()
         log.debug('User has double clicked %s influence.' % text)
 
         # Select row with text
         #
         self.influenceTable.selectRow(row)
 
-    @property
-    def mirrorAxis(self):
+    @QtCore.Slot(int)
+    def on_mirrorWeightButtonGroup_idClicked(self, index):
         """
-        Getter method used to retrieve the current mirror axis.
+        Mirrors the selected vertex weights across the mesh.
 
-        :rtype: int
-        """
-
-        return self._mirrorAxis
-
-    def mirrorAxisChanged(self, action):
-        """
-        Slot method called whenever the user changes the mirror axis.
-
-        :type action: QtWidgets.QAction
+        :type index: int
         :rtype: None
         """
 
-        self._mirrorAxis = self.sender().actions().index(action)
-
-    @property
-    def slabOption(self):
-        """
-        Getter method used to retrieve the current slab option.
-
-        :rtype: int
-        """
-
-        return self._slabOption
-
-    def slabOptionChanged(self, action):
-        """
-        Slot method called whenever the user changes the slab option.
-
-        :type action: QtWidgets.QAction
-        :rtype: None
-        """
-
-        self._slabOption = self.sender().actions().index(action)
-
-    @validate
-    def selectAffectedVertices(self):
-        """
-        Removes all selected influences from the selected vertices.
-        :rtype: None
-        """
-
-        # Get selected rows
+        # Mirror vertex weights
         #
-        selectedRows = self.weightTable.selectedRows()
+        vertexWeights = self.skin.mirrorVertexWeights(
+            self.selection(),
+            pull=bool(index),
+            axis=self.mirrorAxis,
+            tolerance=self.mirrorTolerance
+        )
 
-        # Update active selection
+        self.skin.applyVertexWeights(vertexWeights)
+
+        # Check if active selection should be reset
         #
-        selection = self.skin.getVerticesByInfluenceId(*selectedRows)
-        self.skin.setSelection(selection)
+        resetActiveSelection = self.resetPreBindMatricesAction.isChecked()
+
+        if resetActiveSelection:
+
+            self.skin.setSelection(list(vertexWeights.keys()))
+
+        # Invalidate user interface
+        #
+        self.invalidateWeights()
+        self.invalidateColors()
+
+    @QtCore.Slot(bool)
+    def on_slabToolButton_clicked(self, checked=False):
+        """
+        Trigger method used to copy the selected vertex influences to the nearest neighbour.
+        See "getSlabMethod" for details.
+
+        :rtype: bool
+        """
+
+        # Get slab option before pasting
+        #
+        self.skin.slabPasteWeights(self.selection(), mode=self.slabOption)
 
         self.invalidateWeights()
         self.invalidateColors()
 
-    @validate
-    def addInfluences(self):
+    @QtCore.Slot(int)
+    def on_weightPresetButtonGroup_idClicked(self, index):
         """
-        Add influences to the selected skin cluster.
+        ID clicked slot method responsible for applying the selected preset.
 
-        :rtype: None
-        """
-
-        qeditinfluencesdialog.addInfluences(self.skin.object())
-        self.invalidateInfluences()
-
-    @validate
-    def removeInfluences(self):
-        """
-        Removes influences from the selected skin cluster.
-
-        :rtype: None
-        """
-
-        qeditinfluencesdialog.removeInfluences(self.skin.object())
-        self.invalidateInfluences()
-
-    @validate
-    def copyWeights(self):
-        """
-        Copies the selected vertex weights to the clipboard.
-
-        :rtype: None
-        """
-
-        self.skin.copyWeights()
-
-    @validate
-    def pasteWeights(self):
-        """
-        Pastes weights from the clipboard to the active selection.
-
-        :rtype: None
-        """
-
-        self.skin.pasteWeights()
-
-        self.invalidateWeights()
-        self.invalidateColors()
-
-    @validate
-    def pasteAveragedWeights(self):
-        """
-        Pastes averaged weights from the clipboard to the active selection.
-
-        :rtype: None
-        """
-
-        self.skin.pasteAveragedWeights()
-
-        self.invalidateWeights()
-        self.invalidateColors()
-
-    @validate
-    def blendVertices(self):
-        """
-        Blends the selected vertices.
-
-        :rtype: None
-        """
-
-        self.skin.blendVertices(self.selection())
-
-        self.invalidateWeights()
-        self.invalidateColors()
-
-    @validate
-    def blendBetweenVertices(self):
-        """
-        Blends the skin weights between a continuous line of vertices.
-
-        :rtype: None
-        """
-
-        self.skin.blendBetweenVertices(self.selection(), blendByDistance=self.blendByDistance)
-
-        self.invalidateWeights()
-        self.invalidateColors()
-
-    @validate
-    def applyPreset(self, amount):
-        """
-        Sets the skin weights to the pre-defined value.
-
-        :type amount: float
+        :type index: int
         :rtype: None
         """
 
@@ -1484,22 +1015,22 @@ class QVertexBlender(qproxywindow.QProxyWindow):
                 self._vertexWeights[vertexIndex],
                 currentInfluence,
                 sourceInfluences,
-                amount,
+                self.__presets__[index],
                 falloff=falloff
             )
 
         # Assign updates to skin
         #
         self.skin.applyVertexWeights(updates)
-
         self.invalidateWeights()
         self.invalidateColors()
 
-    @validate
-    def setWeights(self):
+    @QtCore.Slot(bool)
+    def on_setWeightPushButton_clicked(self, checked=False):
         """
-        Sets the selected vertex weights to the specified amount.
+        ID clicked slot method responsible for setting the selected vertex weights.
 
+        :type checked: bool
         :rtype: None
         """
 
@@ -1528,12 +1059,12 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         self.invalidateWeights()
         self.invalidateColors()
 
-    @validate
-    def incrementWeights(self, pull):
+    @QtCore.Slot(int)
+    def on_incrementWeightButtonGroup_idClicked(self, index):
         """
-        Increments the selected vertex weights by the specified amount.
+        ID clicked slot method responsible for incrementing the selected vertex weights.
 
-        :type pull: bool
+        :type index: int
         :rtype: None
         """
 
@@ -1541,11 +1072,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         #
         currentInfluence = self.currentInfluence()
         sourceInfluences = self.sourceInfluences()
-        amount = self.incrementSpinBox.value()
-
-        if pull:
-
-            amount *= -1.0
+        amount = self.incrementSpinBox.value() * self.__sign__[index]
 
         # Iterate through selection
         #
@@ -1568,12 +1095,12 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         self.invalidateWeights()
         self.invalidateColors()
 
-    @validate
-    def scaleWeights(self, pull):
+    @QtCore.Slot(int)
+    def on_scaleWeightButtonGroup_idClicked(self, index):
         """
-        Scales the selected vertex weights by the specified amount.
+        ID clicked slot method responsible for scaling the selected vertex weights.
 
-        :type pull: bool
+        :type index: bool
         :rtype: None
         """
 
@@ -1581,11 +1108,7 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         #
         currentInfluence = self.currentInfluence()
         sourceInfluences = self.sourceInfluences()
-        percent = self.scaleSpinBox.value()
-
-        if pull:
-
-            percent *= -1.0
+        percent = self.scaleSpinBox.value() * self.__sign__[index]
 
         # Iterate through selection
         #
@@ -1608,60 +1131,106 @@ class QVertexBlender(qproxywindow.QProxyWindow):
         self.invalidateWeights()
         self.invalidateColors()
 
-    @validate
-    def mirrorWeights(self, pull):
+    @QtCore.Slot(bool)
+    def on_precisionCheckBox_toggled(self, checked):
         """
-        Mirrors the selected vertex weights across the mesh.
+        Toggled slot method responsible for toggling precision mode.
 
-        :type pull: bool
-        :rtype: bool
+        :type checked: bool
+        :rtype: None
         """
 
-        # Mirror vertex weights
+        # Toggle auto select behaviour
         #
-        vertexWeights = self.skin.mirrorVertexWeights(
-            self.selection(),
-            pull=pull,
-            axis=self.mirrorAxis,
-            tolerance=self.mirrorTolerance
-        )
+        self._precision = checked
 
-        self.skin.applyVertexWeights(vertexWeights)
+        if self._precision:
 
-        # Check if active selection should be reset
+            # Change selection mode to extended
+            #
+            self.weightTable.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+
+            # Disable auto select
+            #
+            self.influenceTable.setAutoSelect(False)
+            self.weightTable.setAutoSelect(False)
+
+        else:
+
+            # Change selection model to single
+            #
+            self.weightTable.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+
+            # Enable auto select
+            #
+            self.influenceTable.setAutoSelect(True)
+            self.weightTable.setAutoSelect(True)
+
+            # Force synchronize
+            #
+            self.influenceTable.synchronize()
+
+    @QtCore.Slot(bool)
+    def on_selectShellCheckBox_toggled(self, checked):
+        """
+        Toggled slot method responsible for updating the internal select shell flag.
+
+        :type checked: bool
+        :rtype: None
+        """
+
+        self._selectShell = checked
+
+    @QtCore.Slot(QtWidgets.QAction)
+    def on_mirrorAxisActionGroup_triggered(self, action):
+        """
+        Triggered slot method responsible for updating the internal mirror axis.
+
+        :type action: QtWidgets.QAction
+        :rtype: None
+        """
+
+        self._mirrorAxis = self.sender().actions().index(action)
+
+    @QtCore.Slot(QtWidgets.QAction)
+    def on_slabGroup_triggered(self, action):
+        """
+        Triggered slot method responsible for updating the internal slab option.
+
+        :type action: QtWidgets.QAction
+        :rtype: None
+        """
+
+        self._slabOption = self.sender().actions().index(action)
+
+    @QtCore.Slot(bool)
+    def on_selectVerticesAction_triggered(self, checked=False):
+        """
+        Triggered slot method responsible for selecting vertices with the associated influence.
+
+        :type checked: bool
+        :rtype: None
+        """
+
+        # Get selected rows
         #
-        resetActiveSelection = self.resetPreBindMatricesAction.isChecked()
+        selectedRows = self.weightListView.selectedRows()
 
-        if resetActiveSelection:
-
-            self.skin.setSelection(list(vertexWeights.keys()))
-
-        # Invalidate user interface
+        # Update active selection
         #
+        selection = self.skin.getVerticesByInfluenceId(*selectedRows)
+
+        self.skin.setSelection(selection)
         self.invalidateWeights()
         self.invalidateColors()
 
-    @validate
-    def slabPasteWeights(self):
+    @QtCore.Slot(bool)
+    def on_helpAction_triggered(self):
         """
-        Trigger method used to copy the selected vertex influences to the nearest neighbour.
-        See "getSlabMethod" for details.
-
-        :rtype: bool
-        """
-
-        # Get slab option before pasting
-        #
-        self.skin.slabPasteWeights(self.selection(), mode=self.slabOption)
-
-        self.invalidateWeights()
-        self.invalidateColors()
-
-    def requestHelp(self):
-        """
-        Opens a web browser to the documentation page on github.
+        Triggered slot method responsible for opening the github documentation.
 
         :rtype: None
         """
 
         webbrowser.open('https://github.com/bhsingleton/vertexblender')
+    # endregion

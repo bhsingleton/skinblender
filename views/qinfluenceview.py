@@ -14,6 +14,7 @@ class QInfluenceView(QtWidgets.QTableView):
 
     synchronized = QtCore.Signal()
 
+    # region Dunderscores
     def __init__(self, parent=None):
         """
         Private method called after a new instance has been created.
@@ -28,52 +29,51 @@ class QInfluenceView(QtWidgets.QTableView):
 
         # Declare private variables
         #
-        self._sibling = None
+        self._buddy = None
         self._autoSelect = True
         self._pending = False
         self._selectedRows = []
 
-        # Modify view properties
+        # Enable view grid
         #
         self.setShowGrid(True)
-        self.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
-        self.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
-        self.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+    # endregion
 
-    def sibling(self):
+    # region Methods
+    def buddy(self):
         """
-        Returns the sibling widget.
-        If there is no sibling then none is returned!
+        Returns the buddy widget.
+        If there is no buddy then none is returned!
 
         :rtype: QInfluenceView
         """
 
-        return self._sibling
+        return self._buddy
 
-    def setSibling(self, sibling):
+    def setBuddy(self, buddy):
         """
-        Updates the sibling for this widget.
+        Updates the buddy for this widget.
 
-        :type sibling: QInfluenceView
+        :type buddy: QInfluenceView
         :rtype: None
         """
 
         # Check value type
         #
-        if not isinstance(sibling, QInfluenceView):
+        if not isinstance(buddy, QInfluenceView):
 
-            raise TypeError('setSibling() expects a QInfluenceView (%s given)!' % type(sibling).__name__)
+            raise TypeError('setSibling() expects a QInfluenceView (%s given)!' % type(buddy).__name__)
 
-        self._sibling = sibling
+        self._buddy = buddy
 
-    def hasSibling(self):
+    def hasBuddy(self):
         """
-        Evaluates if this widget has a sibling.
+        Evaluates if this widget has a buddy.
 
         :rtype: bool
         """
 
-        return self._sibling is not None
+        return self._buddy is not None
 
     def autoSelect(self):
         """
@@ -121,16 +121,16 @@ class QInfluenceView(QtWidgets.QTableView):
 
         return self._pending
 
-    def isSiblingPending(self):
+    def isBuddyEnabled(self):
         """
-        Evaluates if the sibling is attempting to synchronize with this widget.
+        Evaluates if the buddy is attempting to synchronize with this widget.
 
         :rtype: bool
         """
 
-        if self.hasSibling():
+        if self.hasBuddy():
 
-            return self.sibling().isPending()
+            return self.buddy().isPending()
 
         else:
 
@@ -138,15 +138,15 @@ class QInfluenceView(QtWidgets.QTableView):
 
     def synchronize(self):
         """
-        Forces the sibling to synchronize with this view.
+        Forces the buddy to synchronize with this widget.
 
         :rtype: None
         """
 
-        if self.hasSibling():
+        if self.hasBuddy():
 
             self.beginSelectionUpdate()
-            self.sibling().selectRows(self._selectedRows)
+            self.buddy().selectRows(self._selectedRows)
             self.endSelectionUpdate()
 
             self.synchronized.emit()
@@ -158,7 +158,16 @@ class QInfluenceView(QtWidgets.QTableView):
         :rtype: int
         """
 
-        return self.model().activeInfluences[0]
+        model = self.model()
+        numActiveInfluences = len(model.activeInfluences)
+
+        if numActiveInfluences > 0:
+
+            return model.activeInfluences[0]
+
+        else:
+
+            return None
 
     def selectFirstRow(self):
         """
@@ -167,7 +176,11 @@ class QInfluenceView(QtWidgets.QTableView):
         :rtype: None
         """
 
-        return self.selectRows([self.firstRow()])
+        firstRow = self.firstRow()
+
+        if firstRow is not None:
+
+            self.selectRows([firstRow])
 
     def selectedRows(self):
         """
@@ -205,7 +218,7 @@ class QInfluenceView(QtWidgets.QTableView):
 
             # Set any overrides
             #
-            model.setOverrides(*rows)
+            model.overrides = rows
 
             # Compose selection from source model
             #
@@ -303,6 +316,7 @@ class QInfluenceView(QtWidgets.QTableView):
         # Force the sibling to match selections
         # Be sure to check if a sync is pending to avoid cycle checks!
         #
-        if self.autoSelect() and (self.hasSibling() and not self.isSiblingPending()):
+        if self.autoSelect() and (self.hasBuddy() and not self.isBuddyEnabled()):
 
             self.synchronize()
+    # endregion

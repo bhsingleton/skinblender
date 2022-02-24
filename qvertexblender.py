@@ -483,6 +483,7 @@ class QVertexBlender(quicwindow.QUicWindow):
         self.invalidateWeights()
         self.invalidateColors()
 
+    @validate
     def mirrorWeights(self, pull=False):
         """
         Mirrors the active component selection.
@@ -514,6 +515,26 @@ class QVertexBlender(quicwindow.QUicWindow):
 
             self.invalidateWeights()
             self.invalidateColors()
+
+    @validate
+    def selectAssociatedVertices(self):
+        """
+        Selects the vertices associated with current weight table selection.
+
+        :rtype: None
+        """
+
+        # Get selected rows
+        #
+        selectedRows = self.weightTable.selectedRows()
+
+        # Update active selection
+        #
+        selection = self.skin.getVerticesByInfluenceId(*selectedRows)
+        self.skin.setSelection(selection)
+
+        self.invalidateWeights()
+        self.invalidateColors()
 
     @validate
     def invalidateInfluences(self):
@@ -829,9 +850,13 @@ class QVertexBlender(quicwindow.QUicWindow):
             QtWidgets.QMessageBox.No
         )
 
-        if reply == QtWidgets.QMessageBox.Yes:
+        if reply == QtWidgets.QMessageBox.Yes and self.skin.isValid():
 
-            self.on_resetIntermediateObjectAction_triggered()
+            self.skin.resetIntermediateObject()
+
+        else:
+
+            log.info('Operation aborted...')
 
     @QtCore.Slot(bool)
     def on_resetBindPreMatricesAction_triggered(self, checked=False):
@@ -852,9 +877,13 @@ class QVertexBlender(quicwindow.QUicWindow):
             QtWidgets.QMessageBox.No
         )
 
-        if reply == QtWidgets.QMessageBox.Yes:
+        if reply == QtWidgets.QMessageBox.Yes and self.skin.isValid():
 
             self.skin.resetPreBindMatrices()
+
+        else:
+
+            log.info('Operation aborted...')
 
     @QtCore.Slot(bool)
     def on_blendByDistanceAction_triggered(self, checked=False):
@@ -1129,6 +1158,7 @@ class QVertexBlender(quicwindow.QUicWindow):
         # Assign updates to skin
         #
         self.skin.applyVertexWeights(updates)
+
         self.invalidateWeights()
         self.invalidateColors()
 
@@ -1140,6 +1170,12 @@ class QVertexBlender(quicwindow.QUicWindow):
         :type checked: bool
         :rtype: None
         """
+
+        # Check if skin is valid
+        #
+        if not self.skin.isValid():
+
+            return
 
         # Iterate through selection
         #
@@ -1163,6 +1199,7 @@ class QVertexBlender(quicwindow.QUicWindow):
         # Assign updates to skin
         #
         self.skin.applyVertexWeights(updates)
+
         self.invalidateWeights()
         self.invalidateColors()
 
@@ -1175,15 +1212,19 @@ class QVertexBlender(quicwindow.QUicWindow):
         :rtype: None
         """
 
-        # Get increment arguments
+        # Check if skin is valid
+        #
+        if not self.skin.isValid():
+
+            return
+
+        # Iterate through selection
         #
         currentInfluence = self.currentInfluence()
         sourceInfluences = self.sourceInfluences()
         amount = self.incrementSpinBox.value() * self.__sign__[index]
         vertexWeights = self.vertexWeights()
 
-        # Iterate through selection
-        #
         updates = {}
 
         for (vertexIndex, falloff) in self._softSelection.items():
@@ -1211,20 +1252,24 @@ class QVertexBlender(quicwindow.QUicWindow):
         :rtype: None
         """
 
-        # Get scale arguments
+        # Check if skin is valid
+        #
+        if not self.skin.isValid():
+
+            return
+
+        # Iterate through selection
         #
         currentInfluence = self.currentInfluence()
         sourceInfluences = self.sourceInfluences()
         percent = self.scaleSpinBox.value() * self.__sign__[index]
         vertexWeights = self.vertexWeights()
 
-        # Iterate through selection
-        #
-        vertexWeights = {}
+        updates = {}
 
         for (vertexIndex, falloff) in self._softSelection.items():
 
-            vertexWeights[vertexIndex] = self.skin.scaleWeights(
+            updates[vertexIndex] = self.skin.scaleWeights(
                 vertexWeights[vertexIndex],
                 currentInfluence,
                 sourceInfluences,
@@ -1234,7 +1279,7 @@ class QVertexBlender(quicwindow.QUicWindow):
 
         # Assign updates to skin
         #
-        self.skin.applyVertexWeights(vertexWeights)
+        self.skin.applyVertexWeights(updates)
         self.invalidateWeights()
         self.invalidateColors()
 
@@ -1291,23 +1336,13 @@ class QVertexBlender(quicwindow.QUicWindow):
     @QtCore.Slot(bool)
     def on_selectVerticesAction_triggered(self, checked=False):
         """
-        Triggered slot method responsible for selecting vertices with the associated influence.
+        Triggered slot method responsible for selecting vertices associated with the weight table selection.
 
         :type checked: bool
         :rtype: None
         """
 
-        # Get selected rows
-        #
-        selectedRows = self.weightTable.selectedRows()
-
-        # Update active selection
-        #
-        selection = self.skin.getVerticesByInfluenceId(*selectedRows)
-
-        self.skin.setSelection(selection)
-        self.invalidateWeights()
-        self.invalidateColors()
+        self.selectAssociatedVertices()
 
     @QtCore.Slot(bool)
     def on_helpAction_triggered(self):

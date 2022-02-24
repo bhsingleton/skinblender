@@ -135,7 +135,7 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
            <item>
             <widget class="QGroupBox" name="influencesGroupBox">
              <property name="title">
-              <string>Influences:</string>
+              <string>Influences</string>
              </property>
              <property name="alignment">
               <set>Qt::AlignCenter</set>
@@ -278,7 +278,7 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
               <item>
                <widget class="QGroupBox" name="weightsGroupBox">
                 <property name="title">
-                 <string>Weights:</string>
+                 <string>Weights</string>
                 </property>
                 <property name="alignment">
                  <set>Qt::AlignCenter</set>
@@ -376,7 +376,7 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
               <item>
                <widget class="QGroupBox" name="optionsGroupBox">
                 <property name="title">
-                 <string>Options:</string>
+                 <string>Options</string>
                 </property>
                 <property name="alignment">
                  <set>Qt::AlignCenter</set>
@@ -1218,17 +1218,17 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
  <resources/>
  <connections/>
  <buttongroups>
+  <buttongroup name="weightPresetButtonGroup">
+   <property name="exclusive">
+    <bool>true</bool>
+   </property>
+  </buttongroup>
+  <buttongroup name="mirrorWeightButtonGroup"/>
   <buttongroup name="scaleWeightButtonGroup">
    <property name="exclusive">
     <bool>true</bool>
    </property>
   </buttongroup>
   <buttongroup name="incrementWeightButtonGroup"/>
-  <buttongroup name="mirrorWeightButtonGroup"/>
-  <buttongroup name="weightPresetButtonGroup">
-   <property name="exclusive">
-    <bool>true</bool>
-   </property>
-  </buttongroup>
  </buttongroups>
 </ui>

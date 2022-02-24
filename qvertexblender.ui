@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>MainWindow</class>
- <widget class="QMainWindow" name="MainWindow">
+ <class>vertexBlenderWindow</class>
+ <widget class="QMainWindow" name="vertexBlenderWindow">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -90,7 +90,7 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
      </widget>
     </item>
     <item>
-     <widget class="QWidget" name="editWidget" native="true">
+     <widget class="QWidget" name="editWeightsWidget" native="true">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
         <horstretch>0</horstretch>
@@ -111,7 +111,7 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
         <number>0</number>
        </property>
        <item>
-        <widget class="QSplitter" name="splitter">
+        <widget class="QSplitter" name="centralSplitter">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
          </property>

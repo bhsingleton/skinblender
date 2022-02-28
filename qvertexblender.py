@@ -3,7 +3,7 @@ import webbrowser
 
 from PySide2 import QtCore, QtWidgets, QtGui
 from dcc import fnscene, fnnotify, fnnode, fnskin
-from dcc.userinterface import quicwindow
+from dcc.ui import quicwindow
 from vertexblender.dialogs import qeditinfluencesdialog, qeditweightsdialog
 from vertexblender.models import qinfluenceitemmodel, qweightitemmodel, qinfluenceitemfiltermodel, qweightitemfiltermodel
 from vertexblender.views import qinfluenceview

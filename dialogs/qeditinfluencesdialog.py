@@ -3,7 +3,7 @@ import fnmatch
 from PySide2 import QtCore, QtWidgets, QtGui
 from abc import abstractmethod
 from dcc import fnskin, fnnode
-from dcc.userinterface import qiconlibrary
+from dcc.ui import qiconlibrary
 
 import logging
 logging.basicConfig()
@@ -120,8 +120,8 @@ class QEditInfluencesDialog(QtWidgets.QDialog):
         self.influenceTreeView.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.influenceTreeView.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
         self.influenceTreeView.setStyleSheet('QTreeView:Item { height: 20px; }')
-        self.influenceTreeView.expanded.connect(self.influenceExpanded)
-        self.influenceTreeView.collapsed.connect(self.influenceExpanded)
+        self.influenceTreeView.expanded.connect(self.on_influenceTreeView_expanded)
+        self.influenceTreeView.collapsed.connect(self.on_influenceTreeView_collapsed)
 
         self.influenceItemModel = QtGui.QStandardItemModel(0, 1, parent=self.influenceTreeView)
         self.influenceItemModel.setHorizontalHeaderLabels(['Joint'])
@@ -210,7 +210,7 @@ class QEditInfluencesDialog(QtWidgets.QDialog):
     @abstractmethod
     def isValidInfluence(self, influence):
         """
-        Abstract method used to determine if the supplied influence is valid.
+        Evaluates if the supplied influence is valid.
 
         :type influence: Union[om.MObject, pymxs.MXSWrapperBase]
         :rtype: bool
@@ -220,7 +220,7 @@ class QEditInfluencesDialog(QtWidgets.QDialog):
 
     def getInfluenceIcon(self, influence):
         """
-        Method used to retrieve a display icon for the given influence.
+        Returns the display icon for the given influence.
 
         :type influence: Union[om.MObject, pymxs.MXSWrapperBase]
         :rtype: QtGui.QIcon
@@ -264,9 +264,9 @@ class QEditInfluencesDialog(QtWidgets.QDialog):
 
     def invalidate(self):
         """
-        Invalidate method used to rebuild the tree view.
+        Re-populates the tree view if the skin and root objects are valid.
 
-        :rtype: bool
+        :rtype: None
         """
 
         # Check for none type
@@ -302,9 +302,9 @@ class QEditInfluencesDialog(QtWidgets.QDialog):
             row = item.child(i, 0)
             self.influenceTreeView.setExpanded(row.index(), expanded)
 
-    def influenceExpanded(self, index):
+    def expandChildrenAtIndex(self, index):
         """
-        Slot method called whenever an item is expanded.
+        Recursively expands all of the children at the specified index.
 
         :type index: QtCore.QModelIndex
         :rtype: None
@@ -312,7 +312,9 @@ class QEditInfluencesDialog(QtWidgets.QDialog):
 
         # Check if shift is pressed
         #
-        if QtWidgets.QApplication.keyboardModifiers() == QtCore.Qt.ShiftModifier:
+        modifiers = QtWidgets.QApplication.keyboardModifiers()
+
+        if modifiers == QtCore.Qt.ShiftModifier:
 
             # Get item from index
             #
@@ -386,6 +388,30 @@ class QEditInfluencesDialog(QtWidgets.QDialog):
         return influences
     # endregion
 
+    # regions Slots
+    @QtCore.Slot(QtCore.QModelIndex)
+    def on_influenceTreeView_expanded(self, index):
+        """
+        Expanded slot method responsible for recursively expanding all derived items.
+
+        :type index: QtCore.QModelIndex
+        :rtype: None
+        """
+
+        self.expandChildrenAtIndex(index)
+
+    @QtCore.Slot(QtCore.QModelIndex)
+    def on_influenceTreeView_collapsed(self, index):
+        """
+        Collapsed slot method responsible for recursively collapsing all derived items.
+
+        :type index: QtCore.QModelIndex
+        :rtype: None
+        """
+
+        self.expandChildrenAtIndex(index)
+    # endregion
+
 
 class QAddInfluencesDialog(QEditInfluencesDialog):
     """
@@ -393,7 +419,7 @@ class QAddInfluencesDialog(QEditInfluencesDialog):
     """
 
     # region Dunderscores
-    def __build__(self):
+    def __build__(self, *args, **kwargs):
         """
         Private method used to build the user interface.
 
@@ -402,7 +428,7 @@ class QAddInfluencesDialog(QEditInfluencesDialog):
 
         # Call parent method
         #
-        super(QAddInfluencesDialog, self).__build__()
+        super(QAddInfluencesDialog, self).__build__(*args, **kwargs)
 
         # Modify window title
         #
@@ -412,7 +438,7 @@ class QAddInfluencesDialog(QEditInfluencesDialog):
     # region Methods
     def isValidInfluence(self, influence):
         """
-        Method used to determine if the supplied influence is valid.
+        Evaluates if the supplied influence is valid.
 
         :type influence: Union[om.MObject, pymxs.MXSWrapperBase]
         :rtype: bool
@@ -422,9 +448,9 @@ class QAddInfluencesDialog(QEditInfluencesDialog):
     # endregion
 
     # region Slots
-    def accept(self, *args, **kwargs):
+    def accept(self):
         """
-        Overloaded method called after the user presses the equivalent accept button.
+        Hides the modal dialog and sets the result code to QDialogCode.Accepted.
 
         :rtype: None
         """
@@ -436,7 +462,7 @@ class QAddInfluencesDialog(QEditInfluencesDialog):
 
         # Call parent method
         #
-        super(QAddInfluencesDialog, self).accept(*args, **kwargs)
+        super(QAddInfluencesDialog, self).accept()
 
         # Check how many influences were selected
         #
@@ -456,7 +482,7 @@ class QRemoveInfluencesDialog(QEditInfluencesDialog):
     """
 
     # region Dunderscores
-    def __build__(self):
+    def __build__(self, *args, **kwargs):
         """
         Private method used to build the user interface.
 
@@ -465,7 +491,7 @@ class QRemoveInfluencesDialog(QEditInfluencesDialog):
 
         # Call parent method
         #
-        super(QRemoveInfluencesDialog, self).__build__()
+        super(QRemoveInfluencesDialog, self).__build__(*args, **kwargs)
 
         # Modify window title
         #
@@ -475,7 +501,7 @@ class QRemoveInfluencesDialog(QEditInfluencesDialog):
     # region Methods
     def isValidInfluence(self, influence):
         """
-        Method used to determine if the supplied influence is valid.
+        Evaluates if the supplied influence is valid.
 
         :type influence: Union[om.MObject, pymxs.MXSWrapperBase]
         :rtype: bool
@@ -485,9 +511,9 @@ class QRemoveInfluencesDialog(QEditInfluencesDialog):
     # endregion
 
     # region Slots
-    def accept(self, *args, **kwargs):
+    def accept(self):
         """
-        Overloaded method called after the user presses the equivalent accept button.
+        Hides the modal dialog and sets the result code to QDialogCode.Accepted.
 
         :rtype: None
         """
@@ -499,7 +525,7 @@ class QRemoveInfluencesDialog(QEditInfluencesDialog):
 
         # Call parent method
         #
-        super(QRemoveInfluencesDialog, self).accept(*args, **kwargs)
+        super(QRemoveInfluencesDialog, self).accept()
 
         # Check how many influences were selected
         #
@@ -515,7 +541,7 @@ class QRemoveInfluencesDialog(QEditInfluencesDialog):
 
 def addInfluences(skin):
     """
-    Launches a dialog to add influences to the supplied skin deformer.
+    Opens a dialog to add influences to the supplied skin deformer.
 
     :type skin: Union[om.MObject, pymxs.MXSWrapperBase]
     :rtype: int
@@ -538,7 +564,7 @@ def addInfluences(skin):
 
 def removeInfluences(skin):
     """
-    Launches a dialog to removes influences from the supplied skin deformer.
+    Opens a dialog to removes influences from the supplied skin deformer.
 
     :type skin: Union[om.MObject, pymxs.MXSWrapperBase]
     :rtype: int

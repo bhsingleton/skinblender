@@ -350,7 +350,7 @@ class QLoadWeightsDialog(QtWidgets.QDialog):
     # region Slots
     def accept(self, *args, **kwargs):
         """
-        Overloaded method called after the user presses the okay button.
+        Hides the modal dialog and sets the result code to QDialogCode.Accepted.
 
         :rtype: None
         """
@@ -400,7 +400,7 @@ class QLoadWeightsDialog(QtWidgets.QDialog):
 
     def reject(self, *args, **kwargs):
         """
-        Inherited method called after the user pressed the cancel button.
+        Hides the modal dialog and sets the result code to QDialogCode.Rejected.
 
         :rtype: None
         """

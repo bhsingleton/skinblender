@@ -61,6 +61,7 @@ class QEditInfluencesDialog(QtWidgets.QDialog):
 
     __icons__ = {True: qiconlibrary.getIconByName('yes'), False: qiconlibrary.getIconByName('no')}
 
+    # region Dunderscores
     def __init__(self, *args, **kwargs):
         """
         Private method called after a new instance has been created.
@@ -79,9 +80,9 @@ class QEditInfluencesDialog(QtWidgets.QDialog):
         self._root = fnnode.FnNode()
         self._ignore = kwargs.get('ignore', '_*')
 
-        # Call build method
+        # Build user interface
         #
-        self.__build__()
+        self.__build__(*args, **kwargs)
 
         # Check if any arguments were supplied
         #
@@ -91,14 +92,14 @@ class QEditInfluencesDialog(QtWidgets.QDialog):
 
             self.skin = args[0]
 
-    def __build__(self):
+    def __build__(self, *args, **kwargs):
         """
-        Private method used to build the user interface.
+        Private method that builds the user interface.
 
         :rtype: None
         """
 
-        # Define dialog properties
+        # Edit dialog properties
         #
         self.setObjectName('QEditInfluencesDialog')
         self.setWindowFlags(QtCore.Qt.Dialog)
@@ -148,7 +149,9 @@ class QEditInfluencesDialog(QtWidgets.QDialog):
         self.optionsLayout.addWidget(self.cancelButton)
 
         self.layout().addLayout(self.optionsLayout)
+    # endregion
 
+    # region Properties
     @property
     def skin(self):
         """
@@ -201,7 +204,9 @@ class QEditInfluencesDialog(QtWidgets.QDialog):
         """
 
         return self._ignore
+    # endregion
 
+    # region Methods
     @abstractmethod
     def isValidInfluence(self, influence):
         """
@@ -379,6 +384,7 @@ class QEditInfluencesDialog(QtWidgets.QDialog):
                 log.warning('Unable to add %s influence!' % influenceName)
 
         return influences
+    # endregion
 
 
 class QAddInfluencesDialog(QEditInfluencesDialog):
@@ -386,18 +392,7 @@ class QAddInfluencesDialog(QEditInfluencesDialog):
     Overload of QEditInfluencesDialog used to add influences to a skin deformer.
     """
 
-    def __init__(self, *args, **kwargs):
-        """
-        Private method called after a new instance has been created.
-
-        :type parent: QtWidgets.QMainWindow
-        :rtype: None
-        """
-
-        # Call parent method
-        #
-        super(QAddInfluencesDialog, self).__init__(*args, **kwargs)
-
+    # region Dunderscores
     def __build__(self):
         """
         Private method used to build the user interface.
@@ -412,7 +407,21 @@ class QAddInfluencesDialog(QEditInfluencesDialog):
         # Modify window title
         #
         self.setWindowTitle('|| Add Influences')
+    # endregion
 
+    # region Methods
+    def isValidInfluence(self, influence):
+        """
+        Method used to determine if the supplied influence is valid.
+
+        :type influence: Union[om.MObject, pymxs.MXSWrapperBase]
+        :rtype: bool
+        """
+
+        return influence not in self.skin.influences()
+    # endregion
+
+    # region Slots
     def accept(self, *args, **kwargs):
         """
         Overloaded method called after the user presses the equivalent accept button.
@@ -438,16 +447,7 @@ class QAddInfluencesDialog(QEditInfluencesDialog):
         else:
 
             log.warning('No influences selected to add!')
-
-    def isValidInfluence(self, influence):
-        """
-        Method used to determine if the supplied influence is valid.
-
-        :type influence: Union[om.MObject, pymxs.MXSWrapperBase]
-        :rtype: bool
-        """
-
-        return influence not in self.skin.influences()
+    # endregion
 
 
 class QRemoveInfluencesDialog(QEditInfluencesDialog):
@@ -455,18 +455,7 @@ class QRemoveInfluencesDialog(QEditInfluencesDialog):
     Overload of QEditInfluencesDialog used to remove influences from a skin deformer.
     """
 
-    def __init__(self, *args, **kwargs):
-        """
-        Overloaded method called after a new instance has been created.
-
-        :type parent: QtWidgets.QMainWindow
-        :rtype: None
-        """
-
-        # Call parent method
-        #
-        super(QRemoveInfluencesDialog, self).__init__(*args, **kwargs)
-
+    # region Dunderscores
     def __build__(self):
         """
         Private method used to build the user interface.
@@ -481,7 +470,21 @@ class QRemoveInfluencesDialog(QEditInfluencesDialog):
         # Modify window title
         #
         self.setWindowTitle('|| Remove Influences')
+    # endregion
 
+    # region Methods
+    def isValidInfluence(self, influence):
+        """
+        Method used to determine if the supplied influence is valid.
+
+        :type influence: Union[om.MObject, pymxs.MXSWrapperBase]
+        :rtype: bool
+        """
+
+        return influence in self.skin.influences()
+    # endregion
+
+    # region Slots
     def accept(self, *args, **kwargs):
         """
         Overloaded method called after the user presses the equivalent accept button.
@@ -507,16 +510,7 @@ class QRemoveInfluencesDialog(QEditInfluencesDialog):
         else:
 
             log.warning('No influences selected to add!')
-
-    def isValidInfluence(self, influence):
-        """
-        Method used to determine if the supplied influence is valid.
-
-        :type influence: Union[om.MObject, pymxs.MXSWrapperBase]
-        :rtype: bool
-        """
-
-        return influence in self.skin.influences()
+    # endregion
 
 
 def addInfluences(skin):

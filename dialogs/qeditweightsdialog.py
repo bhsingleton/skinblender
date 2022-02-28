@@ -19,6 +19,7 @@ class QLoadWeightsDialog(QtWidgets.QDialog):
     Overload of QDialog used to remap skin weights onto a skin deformer.
     """
 
+    # region Dunderscores
     def __init__(self, *args, **kwargs):
         """
         Private method called after a new instance has been created.
@@ -46,9 +47,9 @@ class QLoadWeightsDialog(QtWidgets.QDialog):
         self._vertices = None
         self._points = None
 
-        # Call build method
+        # Build user interface
         #
-        self.__build__()
+        self.__build__(*args, **kwargs)
 
         # Check if any arguments were supplied
         #
@@ -61,12 +62,12 @@ class QLoadWeightsDialog(QtWidgets.QDialog):
 
     def __build__(self):
         """
-        Private method used to build the user interface.
+        Private method that builds the user interface.
 
         :rtype: None
         """
 
-        # Define dialog properties
+        # Edit dialog properties
         #
         self.setWindowFlags(QtCore.Qt.Dialog)
         self.setObjectName('QLoadWeightsDialog')
@@ -130,69 +131,9 @@ class QLoadWeightsDialog(QtWidgets.QDialog):
         # Trigger invalidation
         #
         self.indexRadioBtn.setChecked(QtCore.Qt.Checked)
+    # endregion
 
-    def accept(self, *args, **kwargs):
-        """
-        Overloaded method called after the user presses the okay button.
-
-        :rtype: None
-        """
-
-        # Get load method before closing dialog
-        #
-        influenceMap = self.getInfluenceMap()
-        method = self.selectedMethod()
-
-        # Call parent method
-        #
-        super(QLoadWeightsDialog, self).accept(*args, **kwargs)
-
-        # Check which load operation to perform
-        #
-        if method == 0:
-
-            log.info('Loading weights by vertex index.')
-
-            vertices = self.skin.remapVertexWeights(self._vertices, influenceMap)
-            self.skin.applyVertexWeights(vertices)
-
-        elif method == 1:
-
-            log.info('Loading weights by closest point.')
-
-            # Query point tree
-            #
-            tree = cKDTree(list(self._points.values()))
-
-            vertexMap = {x: y for (x, y) in enumerate(self._points.keys())}
-            distances, closestIndices = tree.query(self.skin.controlPoints())
-
-            # Remap vertex weights
-            #
-            closestVertexIndices = [vertexMap[x] for x in closestIndices]
-            vertices = {x + self.skin.arrayOffset: deepcopy(self._vertices[x]) for x in closestVertexIndices}
-
-            # Apply weights
-            #
-            vertices = self.skin.remapVertexWeights(vertices, influenceMap)
-            self.skin.applyVertexWeights(vertices)
-
-        else:
-
-            raise RuntimeError('Unknown load method encountered!')
-
-    def reject(self, *args, **kwargs):
-        """
-        Inherited method called after the user pressed the cancel button.
-
-        :rtype: None
-        """
-
-        # Call parent method
-        #
-        super(QLoadWeightsDialog, self).reject(*args, **kwargs)
-        log.debug('Operation aborted...')
-
+    # region Properties
     @property
     def skin(self):
         """
@@ -266,7 +207,9 @@ class QLoadWeightsDialog(QtWidgets.QDialog):
         # Invalidate user interface
         #
         self.invalidate()
+    # endregion
 
+    # region Methods
     def selectedMethod(self):
         """
         Method used to retrieve the user specified load operation:
@@ -402,6 +345,71 @@ class QLoadWeightsDialog(QtWidgets.QDialog):
         #
         log.debug('Created influence map: %s' % influenceMap)
         return influenceMap
+    # endregion
+
+    # region Slots
+    def accept(self, *args, **kwargs):
+        """
+        Overloaded method called after the user presses the okay button.
+
+        :rtype: None
+        """
+
+        # Get load method before closing dialog
+        #
+        influenceMap = self.getInfluenceMap()
+        method = self.selectedMethod()
+
+        # Call parent method
+        #
+        super(QLoadWeightsDialog, self).accept(*args, **kwargs)
+
+        # Check which load operation to perform
+        #
+        if method == 0:
+
+            log.info('Loading weights by vertex index.')
+
+            vertices = self.skin.remapVertexWeights(self._vertices, influenceMap)
+            self.skin.applyVertexWeights(vertices)
+
+        elif method == 1:
+
+            log.info('Loading weights by closest point.')
+
+            # Query point tree
+            #
+            tree = cKDTree(list(self._points.values()))
+
+            vertexMap = {x: y for (x, y) in enumerate(self._points.keys())}
+            distances, closestIndices = tree.query(self.skin.controlPoints())
+
+            # Remap vertex weights
+            #
+            closestVertexIndices = [vertexMap[x] for x in closestIndices]
+            vertices = {x + self.skin.arrayOffset: deepcopy(self._vertices[x]) for x in closestVertexIndices}
+
+            # Apply weights
+            #
+            vertices = self.skin.remapVertexWeights(vertices, influenceMap)
+            self.skin.applyVertexWeights(vertices)
+
+        else:
+
+            raise RuntimeError('Unknown load method encountered!')
+
+    def reject(self, *args, **kwargs):
+        """
+        Inherited method called after the user pressed the cancel button.
+
+        :rtype: None
+        """
+
+        # Call parent method
+        #
+        super(QLoadWeightsDialog, self).reject(*args, **kwargs)
+        log.debug('Operation aborted...')
+    # endregion
 
 
 def loadSkinWeights(skin, filePath):

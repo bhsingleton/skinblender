@@ -54,8 +54,8 @@ class QVertexBlender(quicwindow.QUicWindow):
         """
         Private method called after a new instance has been created.
 
-        :keyword parent: QtWidgets.QWidget
-        :keyword flags: QtCore.Qt.WindowFlags
+        :key parent: QtWidgets.QWidget
+        :key flags: QtCore.Qt.WindowFlags
         :rtype: None
         """
 

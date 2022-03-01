@@ -21,7 +21,7 @@ class QInfluenceFilterModel(QtCore.QSortFilterProxyModel):
         Private method called after a new instance has been created.
 
         :type pattern: str
-        :keyword parent: QtCore.QObject
+        :key parent: QtCore.QObject
         :rtype: None
         """
 

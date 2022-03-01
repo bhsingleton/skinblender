@@ -24,8 +24,8 @@ class QLoadWeightsDialog(QtWidgets.QDialog):
         """
         Private method called after a new instance has been created.
 
-        :keyword parent: QtWidgets.QMainWindow
-        :keyword f: QtCore.Qt.WindowFlags
+        :key parent: QtWidgets.QMainWindow
+        :key f: QtCore.Qt.WindowFlags
         :rtype: None
         """
 

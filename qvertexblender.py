@@ -325,7 +325,7 @@ class QVertexBlender(quicwindow.QUicWindow):
         self.blendByDistanceAction.setChecked(blendByDistance)
 
         slabOption = self.settings.value('editor/slabOption', defaultValue='0', type=int)
-        self.slabActionGroup.actions(slabOption).setChecked(True)
+        self.slabActionGroup.actions()[slabOption].setChecked(True)
 
         self.mirrorTolerance = self.settings.value('editor/mirrorTolerance', defaultValue='1e-3', type=float)
 

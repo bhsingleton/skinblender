@@ -539,7 +539,7 @@ class QVertexBlender(quicwindow.QUicWindow):
     @validate
     def invalidateInfluences(self):
         """
-        Invalidation method used to reset the influence list.
+        Invalidates the influence item model.
 
         :rtype: None
         """
@@ -547,29 +547,9 @@ class QVertexBlender(quicwindow.QUicWindow):
         self.influenceItemModel.invalidateInfluences()
 
     @validate
-    def invalidateWeights(self, *args, **kwargs):
+    def invalidateSelection(self):
         """
-        Invalidation method used to reset the selection list.
-        :rtype: None
-        """
-
-        self.weightItemModel.invalidateWeights()
-
-    @validate
-    def invalidateColors(self, *args, **kwargs):
-        """
-        Invalidation method used to re-transfer paint weights onto color set.
-
-        :rtype: None
-        """
-
-        self.skin.invalidateColors()
-    # endregion
-
-    # region Callbacks
-    def activeSelectionChanged(self):
-        """
-        Callback method used to invalidate the active selection.
+        Invalidates the internal vertex selection.
 
         :rtype: None
         """
@@ -594,6 +574,37 @@ class QVertexBlender(quicwindow.QUicWindow):
         else:
 
             log.debug('Skipping invalidation...')
+
+    @validate
+    def invalidateWeights(self, *args, **kwargs):
+        """
+        Invalidates the weight item model.
+
+        :rtype: None
+        """
+
+        self.weightItemModel.invalidateWeights()
+
+    @validate
+    def invalidateColors(self, *args, **kwargs):
+        """
+        Invalidates the vertex color display.
+
+        :rtype: None
+        """
+
+        self.skin.invalidateColors()
+    # endregion
+
+    # region Callbacks
+    def activeSelectionChanged(self):
+        """
+        Callback method used to invalidate the active selection.
+
+        :rtype: None
+        """
+
+        self.invalidateSelection()
     # endregion
 
     # region Events
@@ -663,8 +674,7 @@ class QVertexBlender(quicwindow.QUicWindow):
             self.skinChanged.emit(self.skin.object())
             self.skin.showColors()
 
-            self.invalidateWeights()
-            self.invalidateColors()
+            self.invalidateSelection()
 
             # Select first influence
             #

@@ -553,7 +553,7 @@ class QVertexBlender(quicwindow.QUicWindow):
         :rtype: None
         """
 
-        # Reset item model
+        # Fill item model
         #
         influences = self.skin.influences()
         maxInfluenceId = influences.lastIndex()
@@ -613,7 +613,7 @@ class QVertexBlender(quicwindow.QUicWindow):
         :rtype: None
         """
 
-        # Reset item model
+        # Fill item model
         #
         influences = self.skin.influences()
         maxInfluenceId = influences.lastIndex()
@@ -624,7 +624,14 @@ class QVertexBlender(quicwindow.QUicWindow):
         # Get vertex weights
         #
         self._vertexWeights = self.skin.vertexWeights(*self._selection)
-        self._weights = self.skin.averageWeights(*list(self._vertexWeights.values()))
+
+        if len(self._vertexWeights) > 0:
+
+            self._weights = self.skin.averageWeights(*list(self._vertexWeights.values()))
+
+        else:
+
+            self._weights = {}
 
         # Iterate through influences
         #
@@ -1085,6 +1092,7 @@ class QVertexBlender(quicwindow.QUicWindow):
         text = self.sender().text()
         filterWildcard = '*{text}*'.format(text=text)
 
+        log.info('Searching for: %s' % filterWildcard)
         self.influenceItemFilterModel.setFilterWildcard(filterWildcard)
 
     @QtCore.Slot(bool)

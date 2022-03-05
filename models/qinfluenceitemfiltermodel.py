@@ -1,4 +1,5 @@
 from PySide2 import QtCore, QtWidgets, QtGui
+from six import string_types
 
 import logging
 logging.basicConfig()
@@ -62,6 +63,26 @@ class QInfluenceItemFilterModel(QtCore.QSortFilterProxyModel):
     # endregion
 
     # region Methods
+    def isNullOrEmpty(self, value):
+        """
+        Evaluates if the supplied value is null of empty.
+
+        :type value: Any
+        :rtype: bool
+        """
+
+        if value is None:
+
+            return True
+
+        elif hasattr(value, '__len__'):
+
+            return len(value) == 0
+
+        else:
+
+            return False
+
     def activeInfluences(self):
         """
         Returns a list of active influences.
@@ -107,14 +128,14 @@ class QInfluenceItemFilterModel(QtCore.QSortFilterProxyModel):
         :rtype: bool
         """
 
-        # Check if row contains a null influence
+        # Evaluate row for null items
         #
         sourceModel = self.sourceModel()
-        index = sourceModel.index(row, 0, parent=parent)
+        columnCount = sourceModel.columnCount()
 
-        if sourceModel.isNullInfluence(index):
-
-            return False
+        indices = [sourceModel.index(row, column, parent=parent) for column in range(columnCount)]
+        items = [sourceModel.itemFromIndex(index) for index in indices]
+        isNull = any(self.isNullOrEmpty(item.text()) for item in items)
 
         # Call parent method
         # This will evaluate any regex expressions
@@ -122,16 +143,19 @@ class QInfluenceItemFilterModel(QtCore.QSortFilterProxyModel):
         acceptsRow = super(QInfluenceItemFilterModel, self).filterAcceptsRow(row, parent)
         selectedRows = self.parent().selectedRows()
 
-        if acceptsRow or row in selectedRows:
+        if (acceptsRow and not isNull) or row in selectedRows:
 
+            log.debug('Accepting row: %s' % (row,))
             return True
 
         elif row in self._overrides:
 
+            log.debug('Overriding row: %s' % (row,))
             self._overrides.remove(row)
+
             return True
 
         else:
 
-            return False
+            return not isNull
     # endregion

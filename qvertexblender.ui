@@ -169,6 +169,9 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
              <property name="contextMenuPolicy">
               <enum>Qt::NoContextMenu</enum>
              </property>
+             <property name="styleSheet">
+              <string notr="true">QTableView::item {height: 24; text-align: center;}</string>
+             </property>
              <property name="horizontalScrollBarPolicy">
               <enum>Qt::ScrollBarAlwaysOff</enum>
              </property>
@@ -177,6 +180,9 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
              </property>
              <property name="alternatingRowColors">
               <bool>true</bool>
+             </property>
+             <property name="selectionMode">
+              <enum>QAbstractItemView::SingleSelection</enum>
              </property>
              <property name="selectionBehavior">
               <enum>QAbstractItemView::SelectRows</enum>
@@ -292,6 +298,9 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
                <widget class="QInfluenceView" name="weightTable">
                 <property name="contextMenuPolicy">
                  <enum>Qt::CustomContextMenu</enum>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">QTableView::item {height: 24; text-align: center;}</string>
                 </property>
                 <property name="horizontalScrollBarPolicy">
                  <enum>Qt::ScrollBarAlwaysOff</enum>

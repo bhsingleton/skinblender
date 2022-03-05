@@ -149,7 +149,31 @@ class QInfluenceView(QtWidgets.QTableView):
             self.buddy().selectRows(self._selectedRows)
             self.endSelectionUpdate()
 
+            self.invalidateFilters()
             self.synchronized.emit()
+
+    def invalidateFilters(self):
+        """
+        Invalidates the filters for both this and the buddy's model.
+
+        :rtype: None
+        """
+
+        # Check if this model should be invalidated
+        #
+        model = self.model()
+
+        if isinstance(model, QtCore.QSortFilterProxyModel):
+
+            model.invalidateFilter()
+
+        # Check if buddy's model should be invalidated
+        #
+        otherModel = self.buddy().model()
+
+        if isinstance(otherModel, QtCore.QSortFilterProxyModel):
+
+            otherModel.invalidateFilter()
 
     def firstRow(self):
         """

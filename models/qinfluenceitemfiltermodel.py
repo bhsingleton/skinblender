@@ -160,7 +160,11 @@ class QInfluenceItemFilterModel(QtCore.QSortFilterProxyModel):
 
             return True
 
-        else:
+        elif isNull:
 
             return not isNull
+
+        else:
+
+            return acceptsRow
     # endregion

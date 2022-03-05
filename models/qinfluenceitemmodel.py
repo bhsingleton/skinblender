@@ -141,7 +141,7 @@ class QInfluenceItemModel(QtCore.QAbstractItemModel):
 
         if numInfluenceIds > 0:
 
-            return max(influenceIds)
+            return max(influenceIds) + 1
 
         else:
 

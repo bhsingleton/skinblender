@@ -1033,7 +1033,7 @@ class QVertexBlender(quicwindow.QUicWindow):
     @QtCore.Slot(QtCore.QModelIndex)
     def on_influenceTable_clicked(self, index):
         """
-        Selection changed slot method responsible for updating the internal tracker.
+        Clicked slot method responsible for updating the current influence.
 
         :type index: QtCore.QModelIndex
         :rtype: None
@@ -1045,6 +1045,31 @@ class QVertexBlender(quicwindow.QUicWindow):
         numRows = len(rows)
 
         if numRows == 1:
+
+            # Update current influence
+            #
+            self._currentInfluence = rows[0]
+
+            # Select influence and redraw
+            #
+            self.skin.selectInfluence(self._currentInfluence)
+            self.invalidateColors()
+
+    @QtCore.Slot(QtCore.QModelIndex)
+    def on_weightTable_clicked(self, index):
+        """
+        Clicked slot method responsible for updating the current influence.
+
+        :type index: QtCore.QModelIndex
+        :rtype: None
+        """
+
+        # Get selected rows from table
+        #
+        rows = self.weightTable.selectedRows()
+        numRows = len(rows)
+
+        if numRows == 1 and not self.precision:
 
             # Update current influence
             #

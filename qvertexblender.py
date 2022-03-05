@@ -638,7 +638,7 @@ class QVertexBlender(quicwindow.QUicWindow):
             success = fnInfluence.trySetObject(influence)
 
             name = ''
-            weight = self._weights.get(i, '')
+            weight = self._weights.get(i, None)
 
             if success:
 
@@ -651,7 +651,7 @@ class QVertexBlender(quicwindow.QUicWindow):
             item1.setTextAlignment(QtCore.Qt.AlignCenter)
 
             item2 = self.weightItemModel.item(i, column=1)
-            item2.setText(str(weight))
+            item2.setText(str(round(weight, 2)) if weight is not None else '')
             item2.setTextAlignment(QtCore.Qt.AlignCenter)
 
         # Invalidate vertex colours

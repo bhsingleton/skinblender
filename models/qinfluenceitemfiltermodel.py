@@ -1,5 +1,6 @@
 from PySide2 import QtCore, QtWidgets, QtGui
 from six import string_types
+from six.moves import collections_abc
 
 import logging
 logging.basicConfig()
@@ -78,6 +79,10 @@ class QInfluenceItemFilterModel(QtCore.QSortFilterProxyModel):
         elif hasattr(value, '__len__'):
 
             return len(value) == 0
+
+        elif isinstance(value, (int, float)):
+
+            return value == 0.0
 
         else:
 

@@ -276,7 +276,43 @@ class QInfluenceView(QtWidgets.QTableView):
         # Select items
         #
         self.selectionModel().select(itemSelection, QtCore.QItemSelectionModel.ClearAndSelect)
-        self.scrollToTop()
+        self.scrollToTopRow()
+
+    def scrollToTopRow(self):
+        """
+        Scrolls to the top-most selected row.
+
+        :rtype: None
+        """
+
+        # Scroll to top row
+        #
+        rows = self.selectedRows()
+        numRows = len(rows)
+
+        if numRows > 0:
+
+            # Create index from row
+            #
+            model = self.model()
+            index = None
+
+            if isinstance(model, QtCore.QAbstractProxyModel):
+
+                index = model.sourceModel().index(rows[0], 0)
+                index = model.mapFromSource(index)
+
+            else:
+
+                index = model.index(rows[0], 0)
+
+            # Scroll to index
+            #
+            self.scrollTo(index, QtWidgets.QAbstractItemView.PositionAtCenter)
+
+        else:
+
+            self.scrollToTop()
 
     def selectionChanged(self, selected, deselected):
         """

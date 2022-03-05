@@ -234,7 +234,7 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
               <enum>QFrame::Sunken</enum>
              </property>
              <property name="lineWidth">
-              <number>2</number>
+              <number>1</number>
              </property>
             </widget>
            </item>
@@ -408,6 +408,9 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
                     <height>24</height>
                    </size>
                   </property>
+                  <property name="toolTip">
+                   <string>Mirrors the selected vertices across the mesh.</string>
+                  </property>
                   <property name="text">
                    <string>Mirror</string>
                   </property>
@@ -436,6 +439,9 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
                     <height>24</height>
                    </size>
                   </property>
+                  <property name="toolTip">
+                   <string>Pulls weights from across the mesh onto the selected vertices.</string>
+                  </property>
                   <property name="text">
                    <string>Pull</string>
                   </property>
@@ -463,6 +469,9 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
                     <width>16777215</width>
                     <height>24</height>
                    </size>
+                  </property>
+                  <property name="autoFillBackground">
+                   <bool>true</bool>
                   </property>
                   <property name="text">
                    <string>Slab</string>
@@ -684,33 +693,8 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
                </layout>
               </item>
               <item>
-               <layout class="QHBoxLayout" name="setWeightsLayout">
-                <item>
-                 <widget class="QLabel" name="setWeightLabel">
-                  <property name="sizePolicy">
-                   <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                    <horstretch>0</horstretch>
-                    <verstretch>0</verstretch>
-                   </sizepolicy>
-                  </property>
-                  <property name="minimumSize">
-                   <size>
-                    <width>70</width>
-                    <height>24</height>
-                   </size>
-                  </property>
-                  <property name="maximumSize">
-                   <size>
-                    <width>70</width>
-                    <height>24</height>
-                   </size>
-                  </property>
-                  <property name="text">
-                   <string>Set Weights:</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
+               <layout class="QGridLayout" name="editWeightLayout">
+                <item row="0" column="1">
                  <widget class="QDoubleSpinBox" name="setWeightSpinBox">
                   <property name="sizePolicy">
                    <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -744,37 +728,8 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
                   </property>
                  </widget>
                 </item>
-                <item>
-                 <widget class="QPushButton" name="setWeightPushButton">
-                  <property name="sizePolicy">
-                   <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                    <horstretch>0</horstretch>
-                    <verstretch>0</verstretch>
-                   </sizepolicy>
-                  </property>
-                  <property name="minimumSize">
-                   <size>
-                    <width>54</width>
-                    <height>24</height>
-                   </size>
-                  </property>
-                  <property name="maximumSize">
-                   <size>
-                    <width>54</width>
-                    <height>24</height>
-                   </size>
-                  </property>
-                  <property name="text">
-                   <string>Apply</string>
-                  </property>
-                 </widget>
-                </item>
-               </layout>
-              </item>
-              <item>
-               <layout class="QHBoxLayout" name="incrementWeightLayout">
-                <item>
-                 <widget class="QLabel" name="incrementWeightLabel">
+                <item row="2" column="0">
+                 <widget class="QLabel" name="scaleWeightLabel">
                   <property name="sizePolicy">
                    <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                     <horstretch>0</horstretch>
@@ -794,11 +749,11 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
                    </size>
                   </property>
                   <property name="text">
-                   <string>Increment By:</string>
+                   <string>Scale Weights:</string>
                   </property>
                  </widget>
                 </item>
-                <item>
+                <item row="1" column="1">
                  <widget class="QDoubleSpinBox" name="incrementWeightSpinBox">
                   <property name="sizePolicy">
                    <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -832,68 +787,8 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
                   </property>
                  </widget>
                 </item>
-                <item>
-                 <widget class="QPushButton" name="incrementWeightPushButton1">
-                  <property name="sizePolicy">
-                   <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                    <horstretch>0</horstretch>
-                    <verstretch>0</verstretch>
-                   </sizepolicy>
-                  </property>
-                  <property name="minimumSize">
-                   <size>
-                    <width>24</width>
-                    <height>24</height>
-                   </size>
-                  </property>
-                  <property name="maximumSize">
-                   <size>
-                    <width>24</width>
-                    <height>24</height>
-                   </size>
-                  </property>
-                  <property name="text">
-                   <string>+</string>
-                  </property>
-                  <attribute name="buttonGroup">
-                   <string notr="true">incrementWeightButtonGroup</string>
-                  </attribute>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QPushButton" name="incrementWeightPushButton2">
-                  <property name="sizePolicy">
-                   <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                    <horstretch>0</horstretch>
-                    <verstretch>0</verstretch>
-                   </sizepolicy>
-                  </property>
-                  <property name="minimumSize">
-                   <size>
-                    <width>24</width>
-                    <height>24</height>
-                   </size>
-                  </property>
-                  <property name="maximumSize">
-                   <size>
-                    <width>24</width>
-                    <height>24</height>
-                   </size>
-                  </property>
-                  <property name="text">
-                   <string>-</string>
-                  </property>
-                  <attribute name="buttonGroup">
-                   <string notr="true">incrementWeightButtonGroup</string>
-                  </attribute>
-                 </widget>
-                </item>
-               </layout>
-              </item>
-              <item>
-               <layout class="QHBoxLayout" name="scaleWeightLayout">
-                <item>
-                 <widget class="QLabel" name="scaleWeightLabel">
+                <item row="0" column="0">
+                 <widget class="QLabel" name="setWeightLabel">
                   <property name="sizePolicy">
                    <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                     <horstretch>0</horstretch>
@@ -913,11 +808,36 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
                    </size>
                   </property>
                   <property name="text">
-                   <string>Scale Weights:</string>
+                   <string>Set Weights:</string>
                   </property>
                  </widget>
                 </item>
-                <item>
+                <item row="1" column="0">
+                 <widget class="QLabel" name="incrementWeightLabel">
+                  <property name="sizePolicy">
+                   <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                    <horstretch>0</horstretch>
+                    <verstretch>0</verstretch>
+                   </sizepolicy>
+                  </property>
+                  <property name="minimumSize">
+                   <size>
+                    <width>70</width>
+                    <height>24</height>
+                   </size>
+                  </property>
+                  <property name="maximumSize">
+                   <size>
+                    <width>70</width>
+                    <height>24</height>
+                   </size>
+                  </property>
+                  <property name="text">
+                   <string>Increment By:</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="1">
                  <widget class="QDoubleSpinBox" name="scaleWeightSpinBox">
                   <property name="sizePolicy">
                    <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -951,54 +871,143 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
                   </property>
                  </widget>
                 </item>
-                <item>
-                 <widget class="QPushButton" name="scaleWeightPushButton1">
+                <item row="1" column="2">
+                 <layout class="QHBoxLayout" name="incrementWeightLayout">
+                  <item>
+                   <widget class="QPushButton" name="incrementWeightPushButton1">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="minimumSize">
+                     <size>
+                      <width>24</width>
+                      <height>24</height>
+                     </size>
+                    </property>
+                    <property name="maximumSize">
+                     <size>
+                      <width>24</width>
+                      <height>24</height>
+                     </size>
+                    </property>
+                    <property name="text">
+                     <string>+</string>
+                    </property>
+                    <attribute name="buttonGroup">
+                     <string notr="true">incrementWeightButtonGroup</string>
+                    </attribute>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="incrementWeightPushButton2">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="minimumSize">
+                     <size>
+                      <width>24</width>
+                      <height>24</height>
+                     </size>
+                    </property>
+                    <property name="maximumSize">
+                     <size>
+                      <width>24</width>
+                      <height>24</height>
+                     </size>
+                    </property>
+                    <property name="text">
+                     <string>-</string>
+                    </property>
+                    <attribute name="buttonGroup">
+                     <string notr="true">incrementWeightButtonGroup</string>
+                    </attribute>
+                   </widget>
+                  </item>
+                 </layout>
+                </item>
+                <item row="2" column="2">
+                 <layout class="QHBoxLayout" name="scaleWeightLayout">
+                  <item>
+                   <widget class="QPushButton" name="scaleWeightPushButton1">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="minimumSize">
+                     <size>
+                      <width>24</width>
+                      <height>24</height>
+                     </size>
+                    </property>
+                    <property name="maximumSize">
+                     <size>
+                      <width>24</width>
+                      <height>24</height>
+                     </size>
+                    </property>
+                    <property name="text">
+                     <string>+</string>
+                    </property>
+                    <attribute name="buttonGroup">
+                     <string notr="true">scaleWeightButtonGroup</string>
+                    </attribute>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="scaleWeightPushButton2">
+                    <property name="minimumSize">
+                     <size>
+                      <width>24</width>
+                      <height>24</height>
+                     </size>
+                    </property>
+                    <property name="maximumSize">
+                     <size>
+                      <width>24</width>
+                      <height>24</height>
+                     </size>
+                    </property>
+                    <property name="text">
+                     <string>-</string>
+                    </property>
+                    <attribute name="buttonGroup">
+                     <string notr="true">scaleWeightButtonGroup</string>
+                    </attribute>
+                   </widget>
+                  </item>
+                 </layout>
+                </item>
+                <item row="0" column="2">
+                 <widget class="QPushButton" name="setWeightPushButton">
                   <property name="sizePolicy">
-                   <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                   <sizepolicy hsizetype="Ignored" vsizetype="Fixed">
                     <horstretch>0</horstretch>
                     <verstretch>0</verstretch>
                    </sizepolicy>
                   </property>
                   <property name="minimumSize">
                    <size>
-                    <width>24</width>
+                    <width>0</width>
                     <height>24</height>
                    </size>
                   </property>
                   <property name="maximumSize">
                    <size>
-                    <width>24</width>
+                    <width>16777215</width>
                     <height>24</height>
                    </size>
                   </property>
                   <property name="text">
-                   <string>+</string>
+                   <string>Apply</string>
                   </property>
-                  <attribute name="buttonGroup">
-                   <string notr="true">scaleWeightButtonGroup</string>
-                  </attribute>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QPushButton" name="scaleWeightPushButton2">
-                  <property name="minimumSize">
-                   <size>
-                    <width>24</width>
-                    <height>24</height>
-                   </size>
-                  </property>
-                  <property name="maximumSize">
-                   <size>
-                    <width>24</width>
-                    <height>24</height>
-                   </size>
-                  </property>
-                  <property name="text">
-                   <string>-</string>
-                  </property>
-                  <attribute name="buttonGroup">
-                   <string notr="true">scaleWeightButtonGroup</string>
-                  </attribute>
                  </widget>
                 </item>
                </layout>
@@ -1015,7 +1024,7 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
               <enum>QFrame::Sunken</enum>
              </property>
              <property name="lineWidth">
-              <number>2</number>
+              <number>1</number>
              </property>
             </widget>
            </item>
@@ -1218,11 +1227,6 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
  <resources/>
  <connections/>
  <buttongroups>
-  <buttongroup name="weightPresetButtonGroup">
-   <property name="exclusive">
-    <bool>true</bool>
-   </property>
-  </buttongroup>
   <buttongroup name="mirrorWeightButtonGroup"/>
   <buttongroup name="scaleWeightButtonGroup">
    <property name="exclusive">
@@ -1230,5 +1234,10 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
    </property>
   </buttongroup>
   <buttongroup name="incrementWeightButtonGroup"/>
+  <buttongroup name="weightPresetButtonGroup">
+   <property name="exclusive">
+    <bool>true</bool>
+   </property>
+  </buttongroup>
  </buttongroups>
 </ui>

@@ -949,7 +949,7 @@ class QVertexBlender(quicwindow.QUicWindow):
         self.pasteWeights()
 
     @QtCore.Slot(bool)
-    def on_pasteAveragedWeightsAction_triggered(self, checked=False):
+    def on_pasteAverageWeightsAction_triggered(self, checked=False):
         """
         Triggered slot method responsible for pasting averaged skin weights to the active selection.
 
@@ -1079,19 +1079,12 @@ class QVertexBlender(quicwindow.QUicWindow):
         :rtype: None
         """
 
-        # Map index to filter model
+        # Map index to source model
         #
         index = self.weightItemFilterModel.mapToSource(index)
-
-        # Get row from remapped index
-        #
         row = index.row()
-        column = index.column()
 
-        text = self.weightItemModel.item(row, column).text()
-        log.debug('User has double clicked %s influence.' % text)
-
-        # Select row with text
+        # Select row
         #
         self.influenceTable.selectRow(row)
 
@@ -1222,7 +1215,7 @@ class QVertexBlender(quicwindow.QUicWindow):
         #
         currentInfluence = self.currentInfluence()
         sourceInfluences = self.sourceInfluences()
-        amount = self.incrementSpinBox.value() * self.__sign__[index]
+        amount = self.incrementWeightSpinBox.value() * self.__sign__[index]
         vertexWeights = self.vertexWeights()
 
         updates = {}

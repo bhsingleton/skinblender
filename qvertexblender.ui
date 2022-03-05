@@ -91,6 +91,9 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
     </item>
     <item>
      <widget class="QWidget" name="editWeightsWidget" native="true">
+      <property name="enabled">
+       <bool>false</bool>
+      </property>
       <property name="sizePolicy">
        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
         <horstretch>0</horstretch>
@@ -1234,7 +1237,24 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
   </customwidget>
  </customwidgets>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>editEnvelopePushButton</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>editWeightsWidget</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>249</x>
+     <y>47</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>249</x>
+     <y>307</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
  <buttongroups>
   <buttongroup name="mirrorWeightButtonGroup"/>
   <buttongroup name="scaleWeightButtonGroup">

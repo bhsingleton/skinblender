@@ -387,7 +387,7 @@ class QLoadWeightsDialog(QtWidgets.QDialog):
             # Remap vertex weights
             #
             closestVertexIndices = [vertexMap[x] for x in closestIndices]
-            vertices = {x + self.skin.arrayOffset: deepcopy(self._vertices[x]) for x in closestVertexIndices}
+            vertices = {x + self.skin.arrayIndexType: deepcopy(self._vertices[x]) for x in closestVertexIndices}
 
             # Apply weights
             #

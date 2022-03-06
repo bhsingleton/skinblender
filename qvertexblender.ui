@@ -34,7 +34,7 @@
      <number>8</number>
     </property>
     <item>
-     <widget class="QGroupBox" name="editEnvelopeGroupBox">
+     <widget class="QGroupBox" name="envelopeGroupBox">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
         <horstretch>0</horstretch>
@@ -44,7 +44,7 @@
       <property name="title">
        <string/>
       </property>
-      <layout class="QVBoxLayout" name="editEnvelopeLayout">
+      <layout class="QVBoxLayout" name="envelopeLayout">
        <property name="spacing">
         <number>6</number>
        </property>
@@ -61,7 +61,7 @@
         <number>6</number>
        </property>
        <item>
-        <widget class="QPushButton" name="editEnvelopePushButton">
+        <widget class="QPushButton" name="envelopePushButton">
          <property name="minimumSize">
           <size>
            <width>0</width>
@@ -90,9 +90,9 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
      </widget>
     </item>
     <item>
-     <widget class="QWidget" name="editWeightsWidget" native="true">
+     <widget class="QWidget" name="skinWidget" native="true">
       <property name="enabled">
-       <bool>false</bool>
+       <bool>true</bool>
       </property>
       <property name="sizePolicy">
        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
@@ -100,7 +100,7 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
         <verstretch>0</verstretch>
        </sizepolicy>
       </property>
-      <layout class="QVBoxLayout" name="verticalLayout_6">
+      <layout class="QVBoxLayout" name="skinLayout">
        <property name="leftMargin">
         <number>0</number>
        </property>
@@ -122,6 +122,9 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
           <number>12</number>
          </property>
          <widget class="QWidget" name="splitContainer1" native="true">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <layout class="QVBoxLayout" name="splitContainer1Layout">
            <property name="leftMargin">
             <number>0</number>
@@ -164,6 +167,9 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
              </property>
              <property name="placeholderText">
               <string>Search for influences...</string>
+             </property>
+             <property name="clearButtonEnabled">
+              <bool>true</bool>
              </property>
             </widget>
            </item>
@@ -250,6 +256,9 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
           </layout>
          </widget>
          <widget class="QWidget" name="splitContainer2" native="true">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <layout class="QVBoxLayout" name="splitContainer2Layout">
            <property name="leftMargin">
             <number>0</number>
@@ -705,7 +714,7 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
                </layout>
               </item>
               <item>
-               <layout class="QGridLayout" name="editWeightLayout">
+               <layout class="QGridLayout" name="editWeightsLayout">
                 <item row="0" column="1">
                  <widget class="QDoubleSpinBox" name="setWeightSpinBox">
                   <property name="sizePolicy">
@@ -1239,9 +1248,9 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
  <resources/>
  <connections>
   <connection>
-   <sender>editEnvelopePushButton</sender>
+   <sender>envelopePushButton</sender>
    <signal>toggled(bool)</signal>
-   <receiver>editWeightsWidget</receiver>
+   <receiver>splitContainer1</receiver>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -1249,19 +1258,35 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
      <y>47</y>
     </hint>
     <hint type="destinationlabel">
+     <x>125</x>
+     <y>307</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>envelopePushButton</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>splitContainer2</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
      <x>249</x>
+     <y>47</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>373</x>
      <y>307</y>
     </hint>
    </hints>
   </connection>
  </connections>
  <buttongroups>
-  <buttongroup name="mirrorWeightButtonGroup"/>
   <buttongroup name="scaleWeightButtonGroup">
    <property name="exclusive">
     <bool>true</bool>
    </property>
   </buttongroup>
+  <buttongroup name="mirrorWeightButtonGroup"/>
   <buttongroup name="incrementWeightButtonGroup"/>
   <buttongroup name="weightPresetButtonGroup">
    <property name="exclusive">

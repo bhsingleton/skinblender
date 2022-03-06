@@ -699,7 +699,7 @@ class QVertexBlender(quicwindow.QUicWindow):
 
         # Exit envelope mode
         #
-        self.editEnvelopePushButton.setChecked(False)
+        self.envelopePushButton.setChecked(False)
 
         # Call parent method
         #
@@ -708,7 +708,7 @@ class QVertexBlender(quicwindow.QUicWindow):
 
     # region Slots
     @QtCore.Slot(bool)
-    def on_editEnvelopePushButton_toggled(self, checked):
+    def on_envelopePushButton_toggled(self, checked):
         """
         Toggled slot method called whenever the user enters edit envelope mode.
 
@@ -1446,10 +1446,11 @@ class QVertexBlender(quicwindow.QUicWindow):
         self.selectAssociatedVertices()
 
     @QtCore.Slot(bool)
-    def on_helpAction_triggered(self):
+    def on_usingVertexBlenderAction_triggered(self, checked=False):
         """
         Triggered slot method responsible for opening the github documentation.
 
+        :type checked: bool
         :rtype: None
         """
 

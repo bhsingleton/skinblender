@@ -3,7 +3,7 @@ import webbrowser
 
 from PySide2 import QtCore, QtWidgets, QtGui
 from dcc import fnscene, fnnotify, fnnode, fnskin
-from dcc.ui import quicwindow
+from dcc.ui import quicwindow, qdropdownbutton
 from vertexblender.dialogs import qeditinfluencesdialog, qeditweightsdialog
 from vertexblender.models import qinfluenceitemfiltermodel
 from vertexblender.views import qinfluenceview
@@ -192,44 +192,9 @@ class QVertexBlender(quicwindow.QUicWindow):
 
         customWidgets = super(QVertexBlender, cls).customWidgets()
         customWidgets['QInfluenceView'] = qinfluenceview.QInfluenceView
+        customWidgets['QDropDownButton'] = qdropdownbutton.QDropDownButton
 
         return customWidgets
-
-    def preLoad(self):
-        """
-        Called before the user interface has been loaded.
-
-        :rtype: None
-        """
-
-        # Create weight table context menu
-        #
-        self.weightTableMenu = QtWidgets.QMenu(parent=self)
-
-        self.selectVerticesAction = self.weightTableMenu.addAction('&Select Affected Vertices')
-        self.selectVerticesAction.triggered.connect(self.on_selectVerticesAction_triggered)
-
-        # Create slab button context menu
-        #
-        self.slabMenu = QtWidgets.QMenu(parent=self)
-
-        self.slabActionGroup = QtWidgets.QActionGroup(self.slabMenu)
-        self.slabActionGroup.setExclusive(True)
-        self.slabActionGroup.triggered.connect(self.on_slabActionGroup_triggered)
-
-        self.closestPointAction = self.slabMenu.addAction('&Closest Point')
-        self.closestPointAction.setCheckable(True)
-        self.closestPointAction.setChecked(QtCore.Qt.CheckState.Checked)
-
-        self.nearestNeighbourAction = self.slabMenu.addAction('&Nearest Neighbour')
-        self.nearestNeighbourAction.setCheckable(True)
-
-        self.alongNormalAction = self.slabMenu.addAction('&Along Normal')
-        self.alongNormalAction.setCheckable(True)
-
-        self.slabActionGroup.addAction(self.closestPointAction)
-        self.slabActionGroup.addAction(self.nearestNeighbourAction)
-        self.slabActionGroup.addAction(self.alongNormalAction)
 
     def postLoad(self):
         """
@@ -246,6 +211,13 @@ class QVertexBlender(quicwindow.QUicWindow):
         self.influenceItemFilterModel = qinfluenceitemfiltermodel.QInfluenceItemFilterModel(parent=self.influenceTable)
         self.influenceItemFilterModel.setSourceModel(self.influenceItemModel)
         self.influenceTable.setModel(self.influenceItemFilterModel)
+
+        # Create weight table context menu
+        #
+        self.weightTableMenu = QtWidgets.QMenu(parent=self.weightTable)
+
+        self.selectVerticesAction = self.weightTableMenu.addAction('&Select Affected Vertices')
+        self.selectVerticesAction.triggered.connect(self.on_selectVerticesAction_triggered)
 
         # Initialize weight item model
         #
@@ -264,7 +236,27 @@ class QVertexBlender(quicwindow.QUicWindow):
         self.weightTable.setBuddy(self.influenceTable)
         self.weightTable.horizontalHeader().setStretchLastSection(True)
 
-        self.slabToolButton.setMenu(self.slabMenu)
+        # Create slab button context menu
+        #
+        self.slabMenu = QtWidgets.QMenu(parent=self.slabDropDownButton)
+
+        self.slabActionGroup = QtWidgets.QActionGroup(self.slabMenu)
+        self.slabActionGroup.setExclusive(True)
+        self.slabActionGroup.triggered.connect(self.on_slabActionGroup_triggered)
+
+        self.closestPointAction = self.slabMenu.addAction('&Closest Point')
+        self.closestPointAction.setCheckable(True)
+        self.closestPointAction.setChecked(QtCore.Qt.CheckState.Checked)
+
+        self.nearestNeighbourAction = self.slabMenu.addAction('&Nearest Neighbour')
+        self.nearestNeighbourAction.setCheckable(True)
+
+        self.alongNormalAction = self.slabMenu.addAction('&Along Normal')
+        self.alongNormalAction.setCheckable(True)
+
+        self.slabActionGroup.addAction(self.closestPointAction)
+        self.slabActionGroup.addAction(self.nearestNeighbourAction)
+        self.slabActionGroup.addAction(self.alongNormalAction)
 
         # Assign button group ids
         #
@@ -1214,7 +1206,7 @@ class QVertexBlender(quicwindow.QUicWindow):
         self.mirrorWeights(pull=bool(index))
 
     @QtCore.Slot(bool)
-    def on_slabToolButton_clicked(self, checked=False):
+    def on_slabDropDownButton_clicked(self, checked=False):
         """
         Trigger method used to copy the selected vertex influences to the nearest neighbour.
         See "getSlabMethod" for details.

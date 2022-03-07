@@ -7,13 +7,13 @@
     <x>0</x>
     <y>0</y>
     <width>500</width>
-    <height>550</height>
+    <height>500</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
     <width>500</width>
-    <height>550</height>
+    <height>500</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -472,7 +472,7 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
                  </widget>
                 </item>
                 <item>
-                 <widget class="QToolButton" name="slabToolButton">
+                 <widget class="QDropDownButton" name="slabDropDownButton">
                   <property name="sizePolicy">
                    <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                     <horstretch>0</horstretch>
@@ -496,15 +496,6 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
                   </property>
                   <property name="text">
                    <string>Slab</string>
-                  </property>
-                  <property name="popupMode">
-                   <enum>QToolButton::MenuButtonPopup</enum>
-                  </property>
-                  <property name="toolButtonStyle">
-                   <enum>Qt::ToolButtonTextOnly</enum>
-                  </property>
-                  <property name="arrowType">
-                   <enum>Qt::DownArrow</enum>
                   </property>
                  </widget>
                 </item>
@@ -1138,10 +1129,16 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
    <property name="text">
     <string>&amp;Save Weights</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+S</string>
+   </property>
   </action>
   <action name="loadWeightsAction">
    <property name="text">
     <string>&amp;Load Weights</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+O</string>
    </property>
   </action>
   <action name="usingVertexBlenderAction">
@@ -1161,25 +1158,40 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
    <property name="text">
     <string>&amp;Copy Weights</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+C</string>
+   </property>
   </action>
   <action name="pasteWeightsAction">
    <property name="text">
     <string>&amp;Paste Weights</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+V</string>
    </property>
   </action>
   <action name="pasteAverageWeightsAction">
    <property name="text">
     <string>&amp;Paste Average Weights</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+V</string>
+   </property>
   </action>
   <action name="blendVerticesAction">
    <property name="text">
     <string>&amp;Blend Vertices</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+B</string>
+   </property>
   </action>
   <action name="blendBetweenVerticesAction">
    <property name="text">
     <string>&amp;Blend Between Vertices</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+B</string>
    </property>
   </action>
   <action name="blendByDistanceAction">
@@ -1244,6 +1256,11 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
    <extends>QTableView</extends>
    <header>qinfluenceview.h</header>
   </customwidget>
+  <customwidget>
+   <class>QDropDownButton</class>
+   <extends>QPushButton</extends>
+   <header>qdropdownbutton.h</header>
+  </customwidget>
  </customwidgets>
  <resources/>
  <connections>
@@ -1281,17 +1298,17 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
   </connection>
  </connections>
  <buttongroups>
+  <buttongroup name="weightPresetButtonGroup">
+   <property name="exclusive">
+    <bool>true</bool>
+   </property>
+  </buttongroup>
+  <buttongroup name="incrementWeightButtonGroup"/>
   <buttongroup name="scaleWeightButtonGroup">
    <property name="exclusive">
     <bool>true</bool>
    </property>
   </buttongroup>
   <buttongroup name="mirrorWeightButtonGroup"/>
-  <buttongroup name="incrementWeightButtonGroup"/>
-  <buttongroup name="weightPresetButtonGroup">
-   <property name="exclusive">
-    <bool>true</bool>
-   </property>
-  </buttongroup>
  </buttongroups>
 </ui>

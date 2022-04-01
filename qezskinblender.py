@@ -1483,5 +1483,5 @@ class QVertexBlender(quicwindow.QUicWindow):
         :rtype: None
         """
 
-        webbrowser.open('https://github.com/bhsingleton/vertexblender')
+        webbrowser.open('https://github.com/bhsingleton/ezskinblender')
     # endregion

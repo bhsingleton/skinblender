@@ -2,7 +2,7 @@ import os
 import webbrowser
 
 from PySide2 import QtCore, QtWidgets, QtGui
-from dcc import fnscene, fnnotify, fnnode, fnskin
+from dcc import fnscene, fnnode, fnskin, fnnotify
 from dcc.ui import quicwindow, qdropdownbutton
 from vertexblender.dialogs import qeditinfluencesdialog, qeditweightsdialog
 from vertexblender.models import qinfluenceitemfiltermodel
@@ -58,6 +58,7 @@ class QVertexBlender(quicwindow.QUicWindow):
 
         # Declare private variables
         #
+        self._scene = fnscene.FnScene()
         self._skin = fnskin.FnSkin()
         self._currentInfluence = None
         self._softSelection = {}
@@ -72,6 +73,7 @@ class QVertexBlender(quicwindow.QUicWindow):
         self._mirrorAxis = 0
         self._mirrorTolerance = 1e-3
         self._clipboard = None
+        self._fnNotify = fnnotify.FnNotify()
         self._selectionChangedId = None
         self._undoId = None
         self._redoId = None
@@ -90,9 +92,19 @@ class QVertexBlender(quicwindow.QUicWindow):
 
     # region Properties
     @property
+    def scene(self):
+        """
+        Getter method that returns the scene function set.
+
+        :rtype: fnscene.FnScene
+        """
+
+        return self._scene
+
+    @property
     def skin(self):
         """
-        Getter method used to retrieve the selected skin cluster object.
+        Getter method that returns the skin function set.
 
         :rtype: fnskin.FnSkin
         """
@@ -102,7 +114,7 @@ class QVertexBlender(quicwindow.QUicWindow):
     @property
     def precision(self):
         """
-        Method used to check if precision mode is enabled.
+        Getter method that returns the precision flag.
 
         :rtype: bool
         """
@@ -122,7 +134,7 @@ class QVertexBlender(quicwindow.QUicWindow):
     @property
     def slabOption(self):
         """
-        Getter method used to retrieve the current slab option.
+        Getter method that returns the current slab option.
 
         :rtype: int
         """
@@ -187,7 +199,7 @@ class QVertexBlender(quicwindow.QUicWindow):
         """
         Returns a dictionary of custom widgets used by this class.
 
-        :rtype: dict[str:type]
+        :rtype: Dict[str, type]
         """
 
         customWidgets = super(QVertexBlender, cls).customWidgets()
@@ -206,57 +218,68 @@ class QVertexBlender(quicwindow.QUicWindow):
         # Initialize influence item model
         #
         self.influenceItemModel = QtGui.QStandardItemModel(parent=self.influenceTable)
+        self.influenceItemModel.setObjectName('influenceItemModel')
         self.influenceItemModel.setHorizontalHeaderLabels(['Name'])
 
         self.influenceItemFilterModel = qinfluenceitemfiltermodel.QInfluenceItemFilterModel(parent=self.influenceTable)
+        self.influenceItemFilterModel.setObjectName('influenceItemFilterModel')
         self.influenceItemFilterModel.setSourceModel(self.influenceItemModel)
+
         self.influenceTable.setModel(self.influenceItemFilterModel)
-
-        # Create weight table context menu
-        #
-        self.weightTableMenu = QtWidgets.QMenu(parent=self.weightTable)
-
-        self.selectVerticesAction = self.weightTableMenu.addAction('&Select Affected Vertices')
-        self.selectVerticesAction.triggered.connect(self.on_selectVerticesAction_triggered)
 
         # Initialize weight item model
         #
         self.weightItemModel = QtGui.QStandardItemModel(parent=self.weightTable)
+        self.weightItemModel.setObjectName('weightItemModel')
         self.weightItemModel.setHorizontalHeaderLabels(['Name', 'Weight'])
 
         self.weightItemFilterModel = qinfluenceitemfiltermodel.QInfluenceItemFilterModel(parent=self.weightTable)
+        self.weightItemFilterModel.setObjectName('weightItemFilterModel')
         self.weightItemFilterModel.setSourceModel(self.weightItemModel)
+
         self.weightTable.setModel(self.weightItemFilterModel)
+
+        # Create weight table context menu
+        #
+        self.weightTableMenu = QtWidgets.QMenu(parent=self.weightTable)
+        self.weightTableMenu.setObjectName('weightTableMenu')
+
+        self.selectAffectedVerticesAction = QtWidgets.QAction('&Select Affected Vertices', parent=self.weightTableMenu)
+        self.selectAffectedVerticesAction.setObjectName('selectAffectedVerticesAction')
+
+        self.weightTableMenu.addActions([self.selectAffectedVerticesAction])
 
         # Set table buddies
         #
         self.influenceTable.setBuddy(self.weightTable)
-        self.influenceTable.horizontalHeader().setStretchLastSection(True)
-
         self.weightTable.setBuddy(self.influenceTable)
-        self.weightTable.horizontalHeader().setStretchLastSection(True)
 
         # Create slab button context menu
         #
         self.slabMenu = QtWidgets.QMenu(parent=self.slabDropDownButton)
+        self.slabMenu.setObjectName('slabMenu')
 
-        self.slabActionGroup = QtWidgets.QActionGroup(self.slabMenu)
-        self.slabActionGroup.setExclusive(True)
-        self.slabActionGroup.triggered.connect(self.on_slabActionGroup_triggered)
-
-        self.closestPointAction = self.slabMenu.addAction('&Closest Point')
+        self.closestPointAction = QtWidgets.QAction('&Closest Point', parent=self.slabMenu)
+        self.closestPointAction.setObjectName('closestPointAction')
         self.closestPointAction.setCheckable(True)
-        self.closestPointAction.setChecked(QtCore.Qt.CheckState.Checked)
+        self.closestPointAction.setChecked(True)
 
-        self.nearestNeighbourAction = self.slabMenu.addAction('&Nearest Neighbour')
+        self.nearestNeighbourAction = QtWidgets.QAction('&Nearest Neighbour', parent=self.slabMenu)
+        self.nearestNeighbourAction.setObjectName('nearestNeighbourAction')
         self.nearestNeighbourAction.setCheckable(True)
 
-        self.alongNormalAction = self.slabMenu.addAction('&Along Normal')
+        self.alongNormalAction = QtWidgets.QAction('&Along Normal', parent=self.slabMenu)
+        self.alongNormalAction.setObjectName('alongNormalAction')
         self.alongNormalAction.setCheckable(True)
 
+        self.slabActionGroup = QtWidgets.QActionGroup(self.slabMenu)
+        self.slabActionGroup.setObjectName('slabActionGroup')
+        self.slabActionGroup.setExclusive(True)
         self.slabActionGroup.addAction(self.closestPointAction)
         self.slabActionGroup.addAction(self.nearestNeighbourAction)
         self.slabActionGroup.addAction(self.alongNormalAction)
+
+        self.slabMenu.addActions([self.closestPointAction, self.nearestNeighbourAction, self.alongNormalAction])
 
         # Assign button group ids
         #
@@ -323,7 +346,7 @@ class QVertexBlender(quicwindow.QUicWindow):
         """
         Returns the vertex indices from the active selection.
 
-        :rtype: list[int]
+        :rtype: List[int]
         """
 
         return list(self._softSelection.keys())
@@ -332,7 +355,7 @@ class QVertexBlender(quicwindow.QUicWindow):
         """
         Returns the soft values from the active selection.
 
-        :rtype: dict[int:float]
+        :rtype: Dict[int, float]
         """
 
         return self._softSelection
@@ -366,9 +389,10 @@ class QVertexBlender(quicwindow.QUicWindow):
 
     def sourceInfluences(self):
         """
-        Gets all of the source influences to redistribute from using the selection model.
+        Returns the source influences IDs to redistribute from.
+        This value changes depending on whether the user is in precision mode.
 
-        :rtype: list[int]
+        :rtype: List[int]
         """
 
         # Get selected rows
@@ -503,7 +527,7 @@ class QVertexBlender(quicwindow.QUicWindow):
             self.invalidateWeights()
 
     @validate
-    def selectAssociatedVertices(self):
+    def selectAffectedVertices(self):
         """
         Selects the vertices associated with current weight table selection.
 
@@ -670,7 +694,7 @@ class QVertexBlender(quicwindow.QUicWindow):
     # endregion
 
     # region Callbacks
-    def activeSelectionChanged(self):
+    def activeSelectionChanged(self, *args, **kwargs):
         """
         Callback method used to invalidate the active selection.
 
@@ -678,6 +702,15 @@ class QVertexBlender(quicwindow.QUicWindow):
         """
 
         self.invalidateSelection()
+
+    def undoBufferChanged(self, *args, **kwargs):
+        """
+        Callback method used to invalidate the display colors.
+
+        :rtype: None
+        """
+
+        self.invalidateWeights()
     # endregion
 
     # region Events
@@ -711,14 +744,13 @@ class QVertexBlender(quicwindow.QUicWindow):
         # Check if envelope is checked
         #
         sender = self.sender()
-        fnNotify = fnnotify.FnNotify()
 
         if checked:
 
             # Evaluate active selection
             # If nothing is selected then uncheck button
             #
-            selection = fnskin.FnSkin.getActiveSelection()
+            selection = self.scene.getActiveSelection()
             selectionCount = len(selection)
 
             if selectionCount == 0:
@@ -736,39 +768,42 @@ class QVertexBlender(quicwindow.QUicWindow):
                 sender.setChecked(False)
                 return
 
-            # Add callbacks
+            # Add scene callbacks
             #
-            self._selectionChangedId = fnNotify.addSelectionChangedNotify(self.activeSelectionChanged)
-            self._undoId = fnNotify.addUndoNotify(self.invalidateColors)
-            self._redoId = fnNotify.addRedoNotify(self.invalidateColors)
+            self._selectionChangedId = self._fnNotify.addSelectionChangedNotify(self.activeSelectionChanged)
+            self._undoId = self._fnNotify.addUndoNotify(self.undoBufferChanged)
+            self._redoId = self._fnNotify.addRedoNotify(self.undoBufferChanged)
+
+            # Display vertex colors
+            #
+            self.skin.showColors()
 
             # Invalidate item models
             #
-            self.skin.showColors()
             self.invalidateInfluences()
             self.invalidateSelection()
-
-            # Select first influence
-            #
             self.influenceTable.selectFirstRow()
 
         else:
 
             # Check if function set still has an object attached
-            # If so then we need to reset it and remove the previous callbacks
+            # If so, then reset it and remove the scene callbacks
             #
             if self.skin.isValid():
 
                 # Remove callbacks
                 #
-                self._selectionChangedId = fnNotify.removeNotify(self._selectionChangedId)
-                self._undoId = fnNotify.removeNotify(self._undoId)
-                self._redoId = fnNotify.removeNotify(self._redoId)
+                self._fnNotify.removeNotify(self._selectionChangedId)
+                self._fnNotify.removeNotify(self._undoId)
+                self._fnNotify.removeNotify(self._redoId)
 
-                # Reset object
+                # Reset skin function set
                 #
                 self.skin.hideColors()
                 self.skin.resetObject()
+
+                # Reset item models
+                #
                 self.influenceItemModel.setRowCount(0)
                 self.weightItemModel.setRowCount(0)
 
@@ -783,7 +818,7 @@ class QVertexBlender(quicwindow.QUicWindow):
 
         # Evaluate active selection
         #
-        selection = fnskin.FnSkin.getActiveSelection()
+        selection = self.scene.getActiveSelection()
         selectionCount = len(selection)
 
         fnScene = fnscene.FnScene()
@@ -880,7 +915,7 @@ class QVertexBlender(quicwindow.QUicWindow):
 
         # Evaluate active selection
         #
-        selection = fnskin.FnSkin.getActiveSelection()
+        selection = self.scene.getActiveSelection()
         selectionCount = len(selection)
 
         if selectionCount != 1:
@@ -1098,6 +1133,7 @@ class QVertexBlender(quicwindow.QUicWindow):
 
         qeditinfluencesdialog.addInfluences(self.skin.object())
         self.invalidateInfluences()
+        self.invalidateWeights()
 
     @QtCore.Slot(bool)
     def on_removeInfluencePushButton_clicked(self, checked=False):
@@ -1110,6 +1146,7 @@ class QVertexBlender(quicwindow.QUicWindow):
 
         qeditinfluencesdialog.removeInfluences(self.skin.object())
         self.invalidateInfluences()
+        self.invalidateWeights()
 
     @QtCore.Slot(QtCore.QModelIndex)
     def on_influenceTable_clicked(self, index):
@@ -1235,7 +1272,7 @@ class QVertexBlender(quicwindow.QUicWindow):
         :type index: int
         :rtype: None
         """
-        print('hello?')
+
         # Iterate through selection
         #
         currentInfluence = self.currentInfluence()
@@ -1427,7 +1464,7 @@ class QVertexBlender(quicwindow.QUicWindow):
         self._selectShell = checked
 
     @QtCore.Slot(bool)
-    def on_selectVerticesAction_triggered(self, checked=False):
+    def on_selectAffectedVerticesAction_triggered(self, checked=False):
         """
         Triggered slot method responsible for selecting vertices associated with the weight table selection.
 
@@ -1435,7 +1472,7 @@ class QVertexBlender(quicwindow.QUicWindow):
         :rtype: None
         """
 
-        self.selectAssociatedVertices()
+        self.selectAffectedVertices()
 
     @QtCore.Slot(bool)
     def on_usingVertexBlenderAction_triggered(self, checked=False):

@@ -213,7 +213,16 @@ class QInfluenceView(QtWidgets.QTableView):
         :rtype: list[int]
         """
 
-        return self._selectedRows
+        selectedRows = self.selectionModel().selectedRows()
+        model = self.model()
+
+        if isinstance(model, QtCore.QAbstractProxyModel):
+
+            return list(set([model.mapToSource(x).row() for x in selectedRows]))
+
+        else:
+
+            return list(set([x.row() for x in selectedRows]))
 
     def selectRow(self, row):
         """

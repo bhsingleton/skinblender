@@ -1,5 +1,5 @@
 # Ez Skin Blender
-A DCC-agnostic selection-based skin weighting tool  
+A DCC-agnostic selection-based skin weighting tool.  
   
 ## Installation
 This tool is reliant on the following python packages: six, scipy, numpy and dcc.  

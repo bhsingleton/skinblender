@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>vertexBlenderWindow</class>
- <widget class="QMainWindow" name="vertexBlenderWindow">
+ <class>QEzSkinBlender</class>
+ <widget class="QMainWindow" name="QEzSkinBlender">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -179,7 +179,7 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
               <enum>Qt::NoContextMenu</enum>
              </property>
              <property name="styleSheet">
-              <string notr="true">QTableView::item {height: 24; text-align: center;}</string>
+              <string notr="true">QTableView::item { height: 24; text-align: center; }</string>
              </property>
              <property name="horizontalScrollBarPolicy">
               <enum>Qt::ScrollBarAlwaysOff</enum>
@@ -327,7 +327,7 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
                  <enum>Qt::CustomContextMenu</enum>
                 </property>
                 <property name="styleSheet">
-                 <string notr="true">QTableView::item {height: 24; text-align: center;}</string>
+                 <string notr="true">QTableView::item { height: 24; text-align: center; }</string>
                 </property>
                 <property name="horizontalScrollBarPolicy">
                  <enum>Qt::ScrollBarAlwaysOff</enum>
@@ -341,8 +341,17 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
                 <property name="selectionBehavior">
                  <enum>QAbstractItemView::SelectRows</enum>
                 </property>
+                <attribute name="horizontalHeaderMinimumSectionSize">
+                 <number>24</number>
+                </attribute>
                 <attribute name="horizontalHeaderStretchLastSection">
                  <bool>true</bool>
+                </attribute>
+                <attribute name="verticalHeaderMinimumSectionSize">
+                 <number>24</number>
+                </attribute>
+                <attribute name="verticalHeaderDefaultSectionSize">
+                 <number>24</number>
                 </attribute>
                </widget>
               </item>
@@ -1280,7 +1289,9 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
    <header>qdropdownbutton.h</header>
   </customwidget>
  </customwidgets>
- <resources/>
+ <resources>
+  <include location="../dcc/ui/resources.qrc"/>
+ </resources>
  <connections>
   <connection>
    <sender>envelopePushButton</sender>
@@ -1316,6 +1327,7 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
   </connection>
  </connections>
  <buttongroups>
+  <buttongroup name="incrementWeightButtonGroup"/>
   <buttongroup name="weightPresetButtonGroup">
    <property name="exclusive">
     <bool>true</bool>
@@ -1327,6 +1339,5 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
     <bool>true</bool>
    </property>
   </buttongroup>
-  <buttongroup name="incrementWeightButtonGroup"/>
  </buttongroups>
 </ui>

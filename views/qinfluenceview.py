@@ -9,7 +9,7 @@ log.setLevel(logging.INFO)
 class QInfluenceView(QtWidgets.QTableView):
     """
     Overload of QTableView used to display skin influences.
-    This widget also has builtin auto select functionality for siblings.
+    This widget also has builtin auto select functionality for buddies.
     """
 
     synchronized = QtCore.Signal()

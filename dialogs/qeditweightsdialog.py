@@ -1,12 +1,12 @@
 import os
 
+from PySide2 import QtCore, QtWidgets, QtGui
 from six import string_types
 from copy import deepcopy
 from itertools import chain
 from scipy.spatial import cKDTree
-from PySide2 import QtCore, QtWidgets, QtGui
-
 from dcc import fnskin, fnnode
+from dcc.ui.dialogs import quicdialog
 
 import logging
 logging.basicConfig()
@@ -14,7 +14,7 @@ log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
 
 
-class QLoadWeightsDialog(QtWidgets.QDialog):
+class QLoadWeightsDialog(quicdialog.QUicDialog):
     """
     Overload of QDialog used to remap skin weights onto a skin deformer.
     """
@@ -29,13 +29,6 @@ class QLoadWeightsDialog(QtWidgets.QDialog):
         :rtype: None
         """
 
-        # Call parent method
-        #
-        parent = kwargs.get('parent', QtWidgets.QApplication.activeWindow())
-        f = kwargs.get('f', QtCore.Qt.WindowFlags())
-
-        super(QLoadWeightsDialog, self).__init__(parent=parent, f=f)
-
         # Declare private variables
         #
         self._skin = fnskin.FnSkin()
@@ -47,90 +40,9 @@ class QLoadWeightsDialog(QtWidgets.QDialog):
         self._vertices = None
         self._points = None
 
-        # Build user interface
+        # Call parent method
         #
-        self.__build__(*args, **kwargs)
-
-        # Check if any arguments were supplied
-        #
-        numArgs = len(args)
-
-        if numArgs == 2:
-
-            self.skin = args[0]
-            self.filePath = args[1]
-
-    def __build__(self):
-        """
-        Private method that builds the user interface.
-
-        :rtype: None
-        """
-
-        # Edit dialog properties
-        #
-        self.setWindowFlags(QtCore.Qt.Dialog)
-        self.setObjectName('QLoadWeightsDialog')
-        self.setWindowTitle('|| Load Weights')
-        self.setMinimumSize(QtCore.QSize(465, 280))
-        self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
-
-        # Define main layout
-        #
-        self.setLayout(QtWidgets.QVBoxLayout())
-
-        # Create influence table widget
-        #
-        self.influenceLayout = QtWidgets.QVBoxLayout()
-
-        self.influenceGrp = QtWidgets.QGroupBox('Influences:')
-        self.influenceGrp.setLayout(self.influenceLayout)
-
-        self.influenceTable = QtWidgets.QTableWidget()
-        self.influenceTable.setShowGrid(True)
-        self.influenceTable.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectItems)
-        self.influenceTable.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
-        self.influenceTable.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
-        self.influenceTable.horizontalHeader().setStretchLastSection(True)
-        self.influenceTable.verticalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Fixed)
-        self.influenceTable.setColumnCount(2)
-        self.influenceTable.setHorizontalHeaderLabels(['Incoming', 'Current'])
-
-        self.influenceLayout.addWidget(self.influenceTable)
-        self.layout().addWidget(self.influenceGrp)
-
-        # Create option buttons
-        #
-        self.optionsLayout = QtWidgets.QHBoxLayout()
-
-        self.loadLayout = QtWidgets.QHBoxLayout()
-        self.loadLabel = QtWidgets.QLabel('Load By:')
-        self.indexRadioBtn = QtWidgets.QRadioButton('Index')
-        self.positionRadioBtn = QtWidgets.QRadioButton('Position')
-
-        self.loadLayout.addWidget(self.loadLabel)
-        self.loadLayout.addWidget(self.indexRadioBtn)
-        self.loadLayout.addWidget(self.positionRadioBtn)
-
-        self.matchBtn = QtWidgets.QPushButton('Match By Name')
-        self.matchBtn.pressed.connect(self.matchInfluences)
-
-        self.okayBtn = QtWidgets.QPushButton('OK')
-        self.okayBtn.clicked.connect(self.accept)
-
-        self.cancelBtn = QtWidgets.QPushButton('Cancel')
-        self.cancelBtn.clicked.connect(self.reject)
-
-        self.optionsLayout.addLayout(self.loadLayout)
-        self.optionsLayout.addWidget(self.matchBtn)
-        self.optionsLayout.addWidget(self.okayBtn)
-        self.optionsLayout.addWidget(self.cancelBtn)
-
-        self.layout().addLayout(self.optionsLayout)
-
-        # Trigger invalidation
-        #
-        self.indexRadioBtn.setChecked(QtCore.Qt.Checked)
+        super(QLoadWeightsDialog, self).__init__(*args, **kwargs)
     # endregion
 
     # region Properties
@@ -194,8 +106,8 @@ class QLoadWeightsDialog(QtWidgets.QDialog):
         self._filePath = filePath
 
         # Load weights from file
-        # Be aware that json does not support numerical keys
-        # So we have to cast all numerical keys to integers
+        # Be aware that json does not support numerical keys!
+        # So we have to cast all numerical keys to integers!
         #
         state = self.skin.loadWeights(filePath)
 
@@ -210,26 +122,76 @@ class QLoadWeightsDialog(QtWidgets.QDialog):
     # endregion
 
     # region Methods
+    def matchInfluences(self):
+        """
+        Matches the incoming influences with the current influences.
+
+        :rtype: None
+        """
+
+        # Iterate through rows
+        #
+        numRows = self.influenceTableWidget.rowCount()
+
+        for row in range(numRows):
+
+            # Check if row is hidden
+            #
+            if self.influenceTableWidget.isRowHidden(row):
+
+                log.debug('Skipping row index: %s' % row)
+                continue
+
+            # Get selected combo box item
+            #
+            tableItem = self.influenceTableWidget.item(row, 0)
+            influenceName = tableItem.text()
+
+            # Find matching text value from influence table
+            #
+            comboBox = self.influenceTableWidget.cellWidget(row, 1)
+            index = comboBox.findText(influenceName)
+
+            if index != -1:
+
+                comboBox.setCurrentIndex(index)
+
+            else:
+
+                log.warning('Unable to find a match for influence: %s!' % influenceName)
+
     def selectedMethod(self):
         """
-        Method used to retrieve the user specified load operation:
-            0 - Load by vertex index.
-            1 - Load by closest position.
+        Returns the user specified load operation:
 
         :rtype: int
         """
 
-        if self.indexRadioBtn.isChecked():
+        return self.methodButtonGroup.checkedId()
 
-            return 0
+    def influenceMap(self):
+        """
+        Returns the user defined influence map.
 
-        elif self.positionRadioBtn.isChecked():
+        :rtype: Dict[int, int]
+        """
 
-            return 1
+        # Iterate through rows
+        #
+        influenceMap = {}
+        numRows = self.influenceTableWidget.rowCount()
 
-        else:
+        for i in range(numRows):
 
-            return -1
+            comboBox = self.influenceTableWidget.cellWidget(i, 1)
+
+            currentIndex = comboBox.currentIndex()
+            influenceMap[i] = self._influenceMap[currentIndex]
+
+        # Return influence map
+        #
+        log.debug('Created influence map: %s' % influenceMap)
+        return influenceMap
 
     def invalidate(self):
         """
@@ -250,7 +212,7 @@ class QLoadWeightsDialog(QtWidgets.QDialog):
         maxInfluenceId = max(self._incomingInfluences.keys())
         maxRowCount = maxInfluenceId + 1
 
-        self.influenceTable.setRowCount(maxRowCount)
+        self.influenceTableWidget.setRowCount(maxRowCount)
 
         for influenceId in range(maxRowCount):
 
@@ -261,113 +223,51 @@ class QLoadWeightsDialog(QtWidgets.QDialog):
 
             # Create remap combo box
             #
-            comboBox = QtWidgets.QComboBox()
+            comboBox = QtWidgets.QComboBox(parent=self.influenceTableWidget)
             comboBox.addItems(list(self._currentInfluences.values()))
 
             # Assign items to table
             #
-            self.influenceTable.setItem(influenceId, 0, tableItem)
-            self.influenceTable.setCellWidget(influenceId, 1, comboBox)
+            self.influenceTableWidget.setItem(influenceId, 0, tableItem)
+            self.influenceTableWidget.setCellWidget(influenceId, 1, comboBox)
 
             # Check if row should be hidden
             #
             if influenceId not in usedInfluenceIds:
 
-                self.influenceTable.setRowHidden(influenceId, True)
+                self.influenceTableWidget.setRowHidden(influenceId, True)
 
         # Resize items to contents
         #
-        self.influenceTable.resizeRowsToContents()
-        self.influenceTable.resizeColumnsToContents()
+        self.influenceTableWidget.resizeColumnsToContents()
 
         # Try and match influences by name
         #
-        self.matchBtn.animateClick()
-
-    def matchInfluences(self):
-        """
-        Iterates through unhidden rows and finds the closest influence name.
-
-        :rtype: None
-        """
-
-        # Iterate through rows
-        #
-        numRows = self.influenceTable.rowCount()
-
-        for row in range(numRows):
-
-            # Check if row is hidden
-            #
-            if self.influenceTable.isRowHidden(row):
-
-                log.debug('Skipping row index: %s' % row)
-                continue
-
-            # Get selected combo box item
-            #
-            tableItem = self.influenceTable.item(row, 0)
-            influenceName = tableItem.text()
-
-            # Find matching text value from influence table
-            #
-            comboBox = self.influenceTable.cellWidget(row, 1)
-            index = comboBox.findText(influenceName)
-
-            if index != -1:
-
-                comboBox.setCurrentIndex(index)
-
-            else:
-
-                log.warning('Unable to find a match for influence: %s!' % influenceName)
-
-    def getInfluenceMap(self):
-        """
-        Gets the user defined influence map.
-
-        :rtype: dict
-        """
-
-        # Iterate through rows
-        #
-        influenceMap = {}
-        numRows = self.influenceTable.rowCount()
-
-        for i in range(numRows):
-
-            comboBox = self.influenceTable.cellWidget(i, 1)
-
-            currentIndex = comboBox.currentIndex()
-            influenceMap[i] = self._influenceMap[currentIndex]
-
-        # Return influence map
-        #
-        log.debug('Created influence map: %s' % influenceMap)
-        return influenceMap
+        self.matchInfluences()
     # endregion
 
     # region Slots
-    def accept(self, *args, **kwargs):
+    @QtCore.Slot()
+    def accept(self):
         """
         Hides the modal dialog and sets the result code to QDialogCode.Accepted.
 
         :rtype: None
         """
 
-        # Get load method before closing dialog
-        #
-        influenceMap = self.getInfluenceMap()
-        method = self.selectedMethod()
-
         # Call parent method
         #
-        super(QLoadWeightsDialog, self).accept(*args, **kwargs)
+        super(QLoadWeightsDialog, self).accept()
 
         # Check which load operation to perform
         #
+        influenceMap = self.influenceMap()
+        method = self.selectedMethod()
+
         if method == 0:
 
+            # Apply weights
+            #
             log.info('Loading weights by vertex index.')
 
             vertices = self.skin.remapVertexWeights(self._vertices, influenceMap)
@@ -375,10 +275,9 @@ class QLoadWeightsDialog(QtWidgets.QDialog):
 
         elif method == 1:
 
-            log.info('Loading weights by closest point.')
-
             # Query point tree
             #
+            log.info('Loading weights by closest point.')
             tree = cKDTree(list(self._points.values()))
 
             vertexMap = {x: y for (x, y) in enumerate(self._points.keys())}
@@ -398,17 +297,16 @@ class QLoadWeightsDialog(QtWidgets.QDialog):
 
             raise RuntimeError('Unknown load method encountered!')
 
-    def reject(self, *args, **kwargs):
+    @QtCore.Slot(bool)
+    def on_matchPushButton_clicked(self, clicked=False):
         """
-        Hides the modal dialog and sets the result code to QDialogCode.Rejected.
+        Clicked slot that matches the incoming influences with the current influences.
 
+        :type clicked: bool
         :rtype: None
         """
 
-        # Call parent method
-        #
-        super(QLoadWeightsDialog, self).reject(*args, **kwargs)
-        log.debug('Operation aborted...')
+        self.matchInfluences()
     # endregion
 
 
@@ -421,16 +319,20 @@ def loadSkinWeights(skin, filePath):
     :rtype: None
     """
 
-    # Check argument types
+    # Check path type
     #
-    dialog = QLoadWeightsDialog()
+    if not isinstance(filePath, string_types):
 
-    if dialog.skin.acceptsObject(skin) and isinstance(filePath, string_types):
+        raise TypeError('loadSkinWeights() expects a valid file path (%s given)!' % type(filePath).__name__)
 
-        dialog.skin = skin
-        dialog.filePath = filePath
+    # Initialize dialog from skin
+    #
+    dialog = QLoadWeightsDialog(skin=skin, filePath=filePath)
+
+    if dialog.skin.isValid():
+
         dialog.exec_()
 
     else:
 
-        raise TypeError('loadSkinWeights() expects a skin and file path (%s and %s given)!' % (type(skin).__name__, type(filePath).__name__,))
+        raise TypeError('loadSkinWeights() expects a valid skin (%s given)!' % type(skin).__name__)

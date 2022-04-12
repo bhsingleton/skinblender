@@ -4,9 +4,10 @@ import webbrowser
 from PySide2 import QtCore, QtWidgets, QtGui
 from dcc import fnscene, fnnode, fnskin, fnnotify
 from dcc.ui import quicwindow, qdropdownbutton
-from vertexblender.dialogs import qeditinfluencesdialog, qeditweightsdialog
-from vertexblender.models import qinfluenceitemfiltermodel
-from vertexblender.views import qinfluenceview
+
+from .dialogs import qeditinfluencesdialog, qeditweightsdialog
+from .models import qinfluenceitemfiltermodel
+from .views import qinfluenceview
 
 import logging
 logging.basicConfig()
@@ -25,7 +26,7 @@ def validate(func):
 
     def wrapper(*args, **kwargs):
 
-        window = args[0]  # type: QVertexBlender
+        window = args[0]  # type: QEzSkinBlender
 
         if window.skin.isValid():
 
@@ -38,7 +39,7 @@ def validate(func):
     return wrapper
 
 
-class QVertexBlender(quicwindow.QUicWindow):
+class QEzSkinBlender(quicwindow.QUicWindow):
     """
     Overload of QProxyWindow used to manipulate vertex weights.
     """
@@ -87,7 +88,7 @@ class QVertexBlender(quicwindow.QUicWindow):
 
         # Call parent method
         #
-        super(QVertexBlender, self).__init__(*args, **kwargs)
+        super(QEzSkinBlender, self).__init__(*args, **kwargs)
     # endregion
 
     # region Properties
@@ -202,7 +203,7 @@ class QVertexBlender(quicwindow.QUicWindow):
         :rtype: Dict[str, type]
         """
 
-        customWidgets = super(QVertexBlender, cls).customWidgets()
+        customWidgets = super(QEzSkinBlender, cls).customWidgets()
         customWidgets['QInfluenceView'] = qinfluenceview.QInfluenceView
         customWidgets['QDropDownButton'] = qdropdownbutton.QDropDownButton
 
@@ -309,7 +310,7 @@ class QVertexBlender(quicwindow.QUicWindow):
 
         # Call parent method
         #
-        super(QVertexBlender, self).saveSettings()
+        super(QEzSkinBlender, self).saveSettings()
 
         # Save user settings
         #
@@ -327,15 +328,15 @@ class QVertexBlender(quicwindow.QUicWindow):
 
         # Call parent method
         #
-        super(QVertexBlender, self).loadSettings()
+        super(QEzSkinBlender, self).loadSettings()
 
         # Load user settings
         #
         mirrorAxis = self.settings.value('editor/mirrorAxis', defaultValue='0', type=int)
         self.mirrorAxisActionGroup.actions()[mirrorAxis].setChecked(True)
 
-        #blendByDistance = self.settings.value('editor/blendByDistance', defaultValue='False', type=bool)
-        #self.blendByDistanceAction.setChecked(blendByDistance)
+        blendByDistance = self.settings.value('editor/blendByDistance', defaultValue='False', type=bool)
+        self.blendByDistanceAction.setChecked(blendByDistance)
 
         slabOption = self.settings.value('editor/slabOption', defaultValue='0', type=int)
         self.slabActionGroup.actions()[slabOption].setChecked(True)
@@ -728,7 +729,7 @@ class QVertexBlender(quicwindow.QUicWindow):
 
         # Call parent method
         #
-        return super(QVertexBlender, self).closeEvent(event)
+        return super(QEzSkinBlender, self).closeEvent(event)
     # endregion
 
     # region Slots

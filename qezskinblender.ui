@@ -1281,12 +1281,12 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
   <customwidget>
    <class>QInfluenceView</class>
    <extends>QTableView</extends>
-   <header>qinfluenceview.h</header>
+   <header>ezskinblender/views/qinfluenceview.h</header>
   </customwidget>
   <customwidget>
    <class>QDropDownButton</class>
    <extends>QPushButton</extends>
-   <header>qdropdownbutton.h</header>
+   <header>dcc/ui/qdropdownbutton.h</header>
   </customwidget>
  </customwidgets>
  <resources>

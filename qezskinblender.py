@@ -1,13 +1,11 @@
 import os
 import webbrowser
 
-from PySide2 import QtCore, QtWidgets, QtGui
+from Qt import QtCore, QtWidgets, QtGui
 from dcc import fnscene, fnnode, fnskin, fnnotify
-from dcc.ui import quicwindow, qdropdownbutton
-
+from dcc.ui import quicwindow
 from .dialogs import qeditinfluencesdialog, qeditweightsdialog
 from .models import qinfluenceitemfiltermodel
-from .views import qinfluenceview
 
 import logging
 logging.basicConfig()
@@ -195,20 +193,6 @@ class QEzSkinBlender(quicwindow.QUicWindow):
     # endregion
 
     # region Methods
-    @classmethod
-    def customWidgets(cls):
-        """
-        Returns a dictionary of custom widgets used by this class.
-
-        :rtype: Dict[str, type]
-        """
-
-        customWidgets = super(QEzSkinBlender, cls).customWidgets()
-        customWidgets['QInfluenceView'] = qinfluenceview.QInfluenceView
-        customWidgets['QDropDownButton'] = qdropdownbutton.QDropDownButton
-
-        return customWidgets
-
     def postLoad(self):
         """
         Called after the user interface has been loaded.
@@ -245,7 +229,7 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         self.weightTableMenu = QtWidgets.QMenu(parent=self.weightTable)
         self.weightTableMenu.setObjectName('weightTableMenu')
 
-        self.selectAffectedVerticesAction = QtWidgets.QAction('&Select Affected Vertices', parent=self.weightTableMenu)
+        self.selectAffectedVerticesAction = QtWidgets.QAction('&Select Affected Vertices', self.weightTableMenu)
         self.selectAffectedVerticesAction.setObjectName('selectAffectedVerticesAction')
 
         self.weightTableMenu.addActions([self.selectAffectedVerticesAction])
@@ -260,16 +244,16 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         self.slabMenu = QtWidgets.QMenu(parent=self.slabDropDownButton)
         self.slabMenu.setObjectName('slabMenu')
 
-        self.closestPointAction = QtWidgets.QAction('&Closest Point', parent=self.slabMenu)
+        self.closestPointAction = QtWidgets.QAction('&Closest Point', self.slabMenu)
         self.closestPointAction.setObjectName('closestPointAction')
         self.closestPointAction.setCheckable(True)
         self.closestPointAction.setChecked(True)
 
-        self.nearestNeighbourAction = QtWidgets.QAction('&Nearest Neighbour', parent=self.slabMenu)
+        self.nearestNeighbourAction = QtWidgets.QAction('&Nearest Neighbour', self.slabMenu)
         self.nearestNeighbourAction.setObjectName('nearestNeighbourAction')
         self.nearestNeighbourAction.setCheckable(True)
 
-        self.alongNormalAction = QtWidgets.QAction('&Along Normal', parent=self.slabMenu)
+        self.alongNormalAction = QtWidgets.QAction('&Along Normal', self.slabMenu)
         self.alongNormalAction.setObjectName('alongNormalAction')
         self.alongNormalAction.setCheckable(True)
 
@@ -316,7 +300,7 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         #
         self.settings.setValue('editor/mirrorAxis', self.mirrorAxis)
         self.settings.setValue('editor/mirrorTolerance', self.mirrorTolerance)
-        self.settings.setValue('editor/blendByDistance', self.blendByDistance)
+        self.settings.setValue('editor/blendByDistance', int(self.blendByDistance))
         self.settings.setValue('editor/slabOption', self.slabOption)
 
     def loadSettings(self):
@@ -332,16 +316,16 @@ class QEzSkinBlender(quicwindow.QUicWindow):
 
         # Load user settings
         #
-        mirrorAxis = self.settings.value('editor/mirrorAxis', defaultValue='0', type=int)
+        mirrorAxis = self.settings.value('editor/mirrorAxis', defaultValue=0)
         self.mirrorAxisActionGroup.actions()[mirrorAxis].setChecked(True)
 
-        blendByDistance = self.settings.value('editor/blendByDistance', defaultValue='False', type=bool)
+        blendByDistance = bool(self.settings.value('editor/blendByDistance', defaultValue=0))
         self.blendByDistanceAction.setChecked(blendByDistance)
 
-        slabOption = self.settings.value('editor/slabOption', defaultValue='0', type=int)
+        slabOption = self.settings.value('editor/slabOption', defaultValue=0)
         self.slabActionGroup.actions()[slabOption].setChecked(True)
 
-        self.mirrorTolerance = self.settings.value('editor/mirrorTolerance', defaultValue='1e-3', type=float)
+        self.mirrorTolerance = float(self.settings.value('editor/mirrorTolerance', defaultValue='1e-3'))
 
     def selection(self):
         """

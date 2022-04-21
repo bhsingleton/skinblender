@@ -1,6 +1,6 @@
 import os
 
-from PySide2 import QtCore, QtWidgets, QtGui
+from Qt import QtCore, QtWidgets, QtGui
 from six import string_types
 from copy import deepcopy
 from itertools import chain

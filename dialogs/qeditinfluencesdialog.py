@@ -1,6 +1,4 @@
-import fnmatch
-
-from PySide2 import QtCore, QtWidgets, QtGui
+from Qt import QtCore, QtWidgets, QtGui
 from abc import abstractmethod
 from dcc import fnskin, fnnode
 from dcc.ui.dialogs import quicdialog

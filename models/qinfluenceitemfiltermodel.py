@@ -1,6 +1,4 @@
-from PySide2 import QtCore, QtWidgets, QtGui
-from six import string_types
-from six.moves import collections_abc
+from Qt import QtCore, QtWidgets, QtGui
 
 import logging
 logging.basicConfig()

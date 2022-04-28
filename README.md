@@ -2,7 +2,7 @@
 A DCC-agnostic selection-based skin weighting tool.  
   
 ## Installation
-This tool is reliant on the following python packages: six, scipy, numpy and dcc.  
+This tool is reliant on the following python packages: six, Qt.py, scipy, numpy and dcc.  
 Once you've acquired these packages you can launch the tool with the following command:  
   
 > from ezskinblender import qezskinblender;  
@@ -25,3 +25,10 @@ https://github.com/bhsingleton/TransferPaintWeightsCmd
   
 ## 3ds Max Interface
 ![image](https://user-images.githubusercontent.com/11181168/132901382-f94ce17a-9c9a-434b-a1c6-d1db5a39acc4.png)
+
+## PIP Dependencies
+To install the required pip dependencies open command prompt.
+Change the current working directory using: cd %PROGRAMFILES%\Autodesk\Maya{version}\bin  
+Make sure you have pip installed using: mayapy.exe -m ensurepip --upgrade --user
+Now you can install the necessary dependencies: mayapy.exe -m pip install six --user
+Be sure to repeat this for: six, Qt.py, scipy and numpy.

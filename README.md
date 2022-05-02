@@ -28,7 +28,7 @@ https://github.com/bhsingleton/TransferPaintWeightsCmd
 
 ## PIP Dependencies
 To install the required pip dependencies open a Command Prompt window.  
-I will be using Maya 2022 for this example. Be sure to adjust your code for whatever version of Maya you are using. 
+In this example I will be using Maya 2022. Be sure to adjust your code for whichever version of Maya you are using.  
 Change the current working directory using:  
 > cd %PROGRAMFILES%\Autodesk\Maya2022\bin  
 

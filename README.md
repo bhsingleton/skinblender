@@ -1,9 +1,24 @@
 # Ez Skin Blender
 A DCC-agnostic selection-based skin weighting tool.  
-  
-## Installation
-This tool is reliant on the following python packages: six, Qt.py, scipy, numpy and dcc.  
-Once you've acquired these packages you can launch the tool with the following command:  
+
+## Installing the PIP Dependencies
+To install the required pip dependencies open a Command Prompt window.  
+In this example I will be using Maya 2022. Be sure to adjust your code to whichever version of Maya you are using.  
+Change the current working directory using:  
+> cd %PROGRAMFILES%\Autodesk\Maya2022\bin  
+
+Make sure you have pip installed using:  
+> mayapy.exe -m ensurepip --upgrade --user  
+
+Now you can install the necessary dependencies using:  
+> mayapy.exe -m pip install six --user  
+
+Be sure to repeat this for: six, Qt.py and scipy.  
+
+## Usage
+Once you've downloaded ezskinblender, move the folder into one of the Maya script directories.  
+You will also need to repeat this process for the dcc package: https://github.com/bhsingleton/dcc/  
+Once you're done you can launch the tool with the following command:  
   
 > from ezskinblender import qezskinblender;  
 > window = qezskinblender.QEzSkinBlender();  
@@ -25,18 +40,3 @@ https://github.com/bhsingleton/TransferPaintWeightsCmd
   
 ## 3ds Max Interface
 ![image](https://user-images.githubusercontent.com/11181168/132901382-f94ce17a-9c9a-434b-a1c6-d1db5a39acc4.png)
-
-## PIP Dependencies
-To install the required pip dependencies open a Command Prompt window.  
-In this example I will be using Maya 2022. Be sure to adjust your code for whichever version of Maya you are using.  
-Change the current working directory using:  
-> cd %PROGRAMFILES%\Autodesk\Maya2022\bin  
-
-Make sure you have pip installed using:  
-> mayapy.exe -m ensurepip --upgrade --user  
-
-Now you can install the necessary dependencies using:  
-> mayapy.exe -m pip install six --user  
-
-Be sure to repeat this for: six, Qt.py and scipy.  
-At this point in time dcc is currently not available through pip.

@@ -27,8 +27,16 @@ https://github.com/bhsingleton/TransferPaintWeightsCmd
 ![image](https://user-images.githubusercontent.com/11181168/132901382-f94ce17a-9c9a-434b-a1c6-d1db5a39acc4.png)
 
 ## PIP Dependencies
-To install the required pip dependencies open command prompt.
-Change the current working directory using: cd %PROGRAMFILES%\Autodesk\Maya{version}\bin  
-Make sure you have pip installed using: mayapy.exe -m ensurepip --upgrade --user
-Now you can install the necessary dependencies: mayapy.exe -m pip install six --user
-Be sure to repeat this for: six, Qt.py, scipy and numpy.
+To install the required pip dependencies open a Command Prompt window.  
+I will be using Maya 2022 for this example. Be sure to adjust your code for whatever version of Maya you are using. 
+Change the current working directory using:  
+> cd %PROGRAMFILES%\Autodesk\Maya2022\bin  
+
+Make sure you have pip installed using:  
+> mayapy.exe -m ensurepip --upgrade --user  
+
+Now you can install the necessary dependencies using:  
+> mayapy.exe -m pip install six --user  
+
+Be sure to repeat this for: six, Qt.py and scipy.  
+At this point in time dcc is currently not available through pip.

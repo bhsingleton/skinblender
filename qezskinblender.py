@@ -231,6 +231,7 @@ class QEzSkinBlender(quicwindow.QUicWindow):
 
         self.selectAffectedVerticesAction = QtWidgets.QAction('&Select Affected Vertices', self.weightTableMenu)
         self.selectAffectedVerticesAction.setObjectName('selectAffectedVerticesAction')
+        self.selectAffectedVerticesAction.triggered.connect(self.on_selectAffectedVerticesAction_triggered)
 
         self.weightTableMenu.addActions([self.selectAffectedVerticesAction])
 

@@ -193,12 +193,16 @@ class QEzSkinBlender(quicwindow.QUicWindow):
     # endregion
 
     # region Methods
-    def postLoad(self):
+    def postLoad(self, *args, **kwargs):
         """
         Called after the user interface has been loaded.
 
         :rtype: None
         """
+
+        # Call parent method
+        #
+        super(QEzSkinBlender, self).postLoad(*args, **kwargs)
 
         # Initialize influence item model
         #

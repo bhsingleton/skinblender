@@ -6,6 +6,7 @@ from dcc import fnscene, fnnode, fnskin, fnnotify
 from dcc.ui import quicwindow
 from .dialogs import qeditinfluencesdialog, qeditweightsdialog
 from .models import qinfluenceitemfiltermodel
+from ..libs import skinutils
 
 import logging
 logging.basicConfig()
@@ -18,8 +19,8 @@ def validate(func):
     Returns a wrapper that validates functions against the UI before executing.
     This will help reduce the amount of conditions needed when we're not in edit mode.
 
-    :type func: function
-    :rtype: function
+    :type func: Callable
+    :rtype: Callable
     """
 
     def wrapper(*args, **kwargs):
@@ -72,10 +73,7 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         self._mirrorAxis = 0
         self._mirrorTolerance = 1e-3
         self._clipboard = None
-        self._fnNotify = fnnotify.FnNotify()
-        self._selectionChangedId = None
-        self._undoId = None
-        self._redoId = None
+        self._notifies = fnnotify.FnNotify()
 
         # Declare public variables
         #
@@ -83,6 +81,15 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         self.influenceItemFilterModel = None
         self.weightItemModel = None
         self.weightItemFilterModel = None
+
+        self.weightTableMenu = None
+        self.selectAffectedVerticesAction = None
+
+        self.slabMenu = None
+        self.closestPointAction = None
+        self.nearestNeighbourAction = None
+        self.alongNormalAction = None
+        self.slabActionGroup = None
 
         # Call parent method
         #
@@ -271,18 +278,20 @@ class QEzSkinBlender(quicwindow.QUicWindow):
 
         self.slabMenu.addActions([self.closestPointAction, self.nearestNeighbourAction, self.alongNormalAction])
 
+        self.slabDropDownButton.setMenu(self.slabMenu)
+
         # Assign button group ids
         #
         self.mirrorWeightButtonGroup.setId(self.mirrorPushButton, 0)
         self.mirrorWeightButtonGroup.setId(self.pullPushButton, 1)
 
-        self.weightPresetButtonGroup.setId(self.weightPresetPushButton1, 0)
-        self.weightPresetButtonGroup.setId(self.weightPresetPushButton2, 1)
-        self.weightPresetButtonGroup.setId(self.weightPresetPushButton3, 2)
-        self.weightPresetButtonGroup.setId(self.weightPresetPushButton4, 3)
-        self.weightPresetButtonGroup.setId(self.weightPresetPushButton5, 4)
-        self.weightPresetButtonGroup.setId(self.weightPresetPushButton6, 5)
-        self.weightPresetButtonGroup.setId(self.weightPresetPushButton7, 6)
+        self.weightPresetButtonGroup.setId(self.weightPresetPushButton1, 0)  # 0.0
+        self.weightPresetButtonGroup.setId(self.weightPresetPushButton2, 1)  # 0.1
+        self.weightPresetButtonGroup.setId(self.weightPresetPushButton3, 2)  # 0.25
+        self.weightPresetButtonGroup.setId(self.weightPresetPushButton4, 3)  # 0.5
+        self.weightPresetButtonGroup.setId(self.weightPresetPushButton5, 4)  # 0.75
+        self.weightPresetButtonGroup.setId(self.weightPresetPushButton6, 5)  # 0.9
+        self.weightPresetButtonGroup.setId(self.weightPresetPushButton7, 6)  # 1.0
 
         self.incrementWeightButtonGroup.setId(self.incrementWeightPushButton1, 0)  # +
         self.incrementWeightButtonGroup.setId(self.incrementWeightPushButton2, 1)  # -
@@ -321,13 +330,13 @@ class QEzSkinBlender(quicwindow.QUicWindow):
 
         # Load user settings
         #
-        mirrorAxis = self.settings.value('editor/mirrorAxis', defaultValue=0)
+        mirrorAxis = int(self.settings.value('editor/mirrorAxis', defaultValue=0))
         self.mirrorAxisActionGroup.actions()[mirrorAxis].setChecked(True)
 
         blendByDistance = bool(self.settings.value('editor/blendByDistance', defaultValue=0))
         self.blendByDistanceAction.setChecked(blendByDistance)
 
-        slabOption = self.settings.value('editor/slabOption', defaultValue=0)
+        slabOption = int(self.settings.value('editor/slabOption', defaultValue=0))
         self.slabActionGroup.actions()[slabOption].setChecked(True)
 
         self.mirrorTolerance = float(self.settings.value('editor/mirrorTolerance', defaultValue='1e-3'))
@@ -535,7 +544,7 @@ class QEzSkinBlender(quicwindow.QUicWindow):
 
     def fillItemModel(self, model, rowCount, columnCount):
         """
-        Fills the supplied item model with items.
+        Fills the supplied model with standard items.
 
         :type model: QtGui.QStandardItemModel
         :type rowCount: int
@@ -569,20 +578,16 @@ class QEzSkinBlender(quicwindow.QUicWindow):
 
         # Iterate through influences
         #
-        fnInfluence = fnnode.FnNode()
-
         for i in range(rowCount):
 
             # Get influence name
             #
             influence = influences[i]
-            success = fnInfluence.trySetObject(influence)
-
             name = ''
 
-            if success:
+            if influence is not None:
 
-                name = fnInfluence.name()
+                name = influence.name()
 
             # Update item data
             #
@@ -641,21 +646,18 @@ class QEzSkinBlender(quicwindow.QUicWindow):
 
         # Iterate through influences
         #
-        fnInfluence = fnnode.FnNode()
-
         for i in range(maxInfluenceId + 1):
 
             # Get influence name and weight
             #
             influence = influences[i]
-            success = fnInfluence.trySetObject(influence)
 
             name = ''
             weight = self._weights.get(i, None)
 
-            if success:
+            if influence is not None:
 
-                name = fnInfluence.name()
+                name = influence.name()
 
             # Update item data
             #
@@ -680,7 +682,7 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         :rtype: None
         """
 
-        self.skin.invalidateColors()
+        self.skin.refreshColors()
     # endregion
 
     # region Callbacks
@@ -714,11 +716,13 @@ class QEzSkinBlender(quicwindow.QUicWindow):
 
         # Exit envelope mode
         #
-        self.envelopePushButton.setChecked(False)
+        if self.envelopePushButton.isChecked():
+
+            self.envelopePushButton.setChecked(False)
 
         # Call parent method
         #
-        return super(QEzSkinBlender, self).closeEvent(event)
+        super(QEzSkinBlender, self).closeEvent(event)
     # endregion
 
     # region Slots
@@ -758,11 +762,11 @@ class QEzSkinBlender(quicwindow.QUicWindow):
                 sender.setChecked(False)
                 return
 
-            # Add scene callbacks
+            # Add scene notifies
             #
-            self._selectionChangedId = self._fnNotify.addSelectionChangedNotify(self.activeSelectionChanged)
-            self._undoId = self._fnNotify.addUndoNotify(self.undoBufferChanged)
-            self._redoId = self._fnNotify.addRedoNotify(self.undoBufferChanged)
+            self._notifies.addSelectionChangedNotify(self.activeSelectionChanged)
+            self._notifies.addUndoNotify(self.undoBufferChanged)
+            self._notifies.addRedoNotify(self.undoBufferChanged)
 
             # Display vertex colors
             #
@@ -774,33 +778,30 @@ class QEzSkinBlender(quicwindow.QUicWindow):
             self.invalidateSelection()
             self.influenceTable.selectFirstRow()
 
+        elif self.skin.isValid():
+
+            # Clear notifies
+            #
+            self._notifies.clear()
+
+            # Reset skin function set
+            #
+            self.skin.hideColors()
+            self.skin.resetObject()
+
+            # Reset item models
+            #
+            self.influenceItemModel.setRowCount(0)
+            self.weightItemModel.setRowCount(0)
+
         else:
 
-            # Check if function set still has an object attached
-            # If so, then reset it and remove the scene callbacks
-            #
-            if self.skin.isValid():
-
-                # Remove callbacks
-                #
-                self._fnNotify.removeNotify(self._selectionChangedId)
-                self._fnNotify.removeNotify(self._undoId)
-                self._fnNotify.removeNotify(self._redoId)
-
-                # Reset skin function set
-                #
-                self.skin.hideColors()
-                self.skin.resetObject()
-
-                # Reset item models
-                #
-                self.influenceItemModel.setRowCount(0)
-                self.weightItemModel.setRowCount(0)
+            pass
 
     @QtCore.Slot(bool)
     def on_saveWeightsAction_triggered(self, checked=False):
         """
-        Triggered slot method responsible for prompting the save weights dialog.
+        Slot method for the saveWeightsAction's `triggered` signal.
 
         :type checked: bool
         :rtype: None
@@ -811,8 +812,7 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         selection = self.scene.getActiveSelection()
         selectionCount = len(selection)
 
-        fnScene = fnscene.FnScene()
-        fnSkin = fnskin.FnSkin()
+        skin = fnskin.FnSkin()
 
         if selectionCount == 0:
 
@@ -821,21 +821,21 @@ class QEzSkinBlender(quicwindow.QUicWindow):
 
         elif selectionCount == 1:
 
-            # Initialize skin function set
+            # Try and initialize skin interface
             #
-            success = fnSkin.trySetObject(selection[0])
+            success = skin.trySetObject(selection[0])
 
             if not success:
 
                 log.warning('Invalid selection...')
                 return
 
-            # Concatenate default file path
+            # Concatenate default export path
             #
-            directory = fnScene.currentDirectory()
-            shapeName = fnnode.FnNode(fnSkin.shape()).name()
+            directory = self.scene.currentDirectory()
+            nodeName = fnnode.FnNode(skin.transform()).name()
 
-            defaultFilePath = os.path.join(directory, '{name}.json'.format(name=shapeName))
+            defaultFilePath = os.path.join(directory, '{name}.json'.format(name=nodeName))
 
             # Prompt user for save path
             #
@@ -848,19 +848,17 @@ class QEzSkinBlender(quicwindow.QUicWindow):
 
             if len(filePath) > 0:
 
-                log.info('Saving weights to: %s' % filePath)
-                fnSkin.saveWeights(filePath)
+                skinutils.exportWeights(filePath, skin)
 
             else:
 
                 log.info('Operation aborted...')
-                return
 
         else:
 
             # Prompt user for save path
             #
-            defaultDirectory = fnScene.currentDirectory()
+            defaultDirectory = self.scene.currentDirectory()
 
             directory = QtWidgets.QFileDialog.getExistingDirectory(
                 self,
@@ -878,26 +876,25 @@ class QEzSkinBlender(quicwindow.QUicWindow):
             #
             for obj in selection:
 
-                # Try and initialize function set
+                # Try and initialize skin interface
                 #
-                success = fnSkin.trySetObject(obj)
+                success = skin.trySetObject(obj)
 
                 if not success:
 
                     continue
 
-                # Save weights to directory
+                # Export weights to directory
                 #
-                shapeName = fnnode.FnNode(fnSkin.shape()).name()
-                filePath = os.path.join(directory, '{name}.json'.format(name=shapeName))
+                nodeName = fnnode.FnNode(skin.transform()).name()
+                filePath = os.path.join(directory, '{name}.json'.format(name=nodeName))
 
-                log.info('Saving weights to: %s' % filePath)
-                fnSkin.saveWeights(filePath)
+                skinutils.exportWeights(filePath, skin)
 
     @QtCore.Slot(bool)
     def on_loadWeightsAction_triggered(self, checked=False):
         """
-        Triggered slot method responsible for prompting the load weights dialog.
+        Slot method for the loadWeightsAction's `triggered` signal.
 
         :type checked: bool
         :rtype: None
@@ -915,8 +912,7 @@ class QEzSkinBlender(quicwindow.QUicWindow):
 
         # Prompt user for file path
         #
-        fnScene = fnscene.FnScene()
-        defaultDirectory = fnScene.currentDirectory()
+        defaultDirectory = self.scene.currentDirectory()
 
         filePath, selectedFilter = QtWidgets.QFileDialog.getOpenFileName(
             self,
@@ -930,7 +926,7 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         if os.path.exists(filePath):
 
             log.info('Loading weights from: %s' % filePath)
-            qeditweightsdialog.loadSkinWeights(selection[0], filePath)
+            qeditweightsdialog.loadWeights(selection[0], filePath, parent=self)
 
         else:
 
@@ -939,10 +935,10 @@ class QEzSkinBlender(quicwindow.QUicWindow):
     @QtCore.Slot(bool)
     def on_resetIntermediateObjectAction_triggered(self, checked=False):
         """
-        Triggered slot method responsible for prompting the reset intermediate object dialog.
+        Slot method for the resetIntermediateObjectAction's `triggered` signal.
 
         :type checked: bool
-        :rtype: bool
+        :rtype: None
         """
 
         # Prompt user
@@ -966,10 +962,10 @@ class QEzSkinBlender(quicwindow.QUicWindow):
     @QtCore.Slot(bool)
     def on_resetBindPreMatricesAction_triggered(self, checked=False):
         """
-        Triggered slot method responsible for prompting the reset bind-pre matrices dialog.
+        Slot method for the resetBindPreMatricesAction's `triggered` signal.
 
         :type checked: bool
-        :rtype: bool
+        :rtype: None
         """
 
         # Prompt user
@@ -993,7 +989,7 @@ class QEzSkinBlender(quicwindow.QUicWindow):
     @QtCore.Slot(bool)
     def on_blendByDistanceAction_triggered(self, checked=False):
         """
-        Triggered slot method responsible for updating the internal blend by distance flag.
+        Slot method for the blendByDistanceAction's `triggered` signal.
 
         :type checked: bool
         :rtype: None
@@ -1004,7 +1000,7 @@ class QEzSkinBlender(quicwindow.QUicWindow):
     @QtCore.Slot(bool)
     def on_setMirrorToleranceAction_triggered(self, checked=False):
         """
-        Triggered slot method responsible for updating the internal mirror tolerance.
+        Slot method for the setMirrorToleranceAction's `triggered` signal.
 
         :type checked: bool
         :rtype: None
@@ -1034,7 +1030,7 @@ class QEzSkinBlender(quicwindow.QUicWindow):
     @QtCore.Slot(bool)
     def on_copyWeightsAction_triggered(self, checked=False):
         """
-        Triggered slot method responsible for copying skin weights from the active selection.
+        Slot method for the copyWeightsAction's `triggered` signal.
 
         :type checked: bool
         :rtype: None
@@ -1045,7 +1041,7 @@ class QEzSkinBlender(quicwindow.QUicWindow):
     @QtCore.Slot(bool)
     def on_pasteWeightsAction_triggered(self, checked=False):
         """
-        Triggered slot method responsible for pasting skin weights to the active selection.
+        Slot method for the pasteWeightsAction's `triggered` signal.
 
         :type checked: bool
         :rtype: None
@@ -1121,7 +1117,7 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         :rtype: None
         """
 
-        qeditinfluencesdialog.addInfluences(self.skin.object())
+        qeditinfluencesdialog.addInfluences(self.skin.object(), parent=self)
         self.invalidateInfluences()
         self.invalidateWeights()
 
@@ -1134,7 +1130,7 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         :rtype: None
         """
 
-        qeditinfluencesdialog.removeInfluences(self.skin.object())
+        qeditinfluencesdialog.removeInfluences(self.skin.object(), parent=self)
         self.invalidateInfluences()
         self.invalidateWeights()
 
@@ -1465,7 +1461,7 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         self.selectAffectedVertices()
 
     @QtCore.Slot(bool)
-    def on_usingVertexBlenderAction_triggered(self, checked=False):
+    def on_usingEzSkinBlenderAction_triggered(self, checked=False):
         """
         Triggered slot method responsible for opening the github documentation.
 

@@ -1,12 +1,9 @@
-import os
-
 from Qt import QtCore, QtWidgets, QtGui
 from six import string_types
-from copy import deepcopy
 from itertools import chain
-from scipy.spatial import cKDTree
 from dcc import fnskin, fnnode
 from dcc.ui.dialogs import quicdialog
+from ...libs import skinweights, skinutils
 
 import logging
 logging.basicConfig()
@@ -16,7 +13,7 @@ log.setLevel(logging.INFO)
 
 class QLoadWeightsDialog(quicdialog.QUicDialog):
     """
-    Overload of QDialog used to remap skin weights onto a skin deformer.
+    Overload of `QDialog` that loads skin weights onto skins.
     """
 
     # region Dunderscores
@@ -29,27 +26,21 @@ class QLoadWeightsDialog(quicdialog.QUicDialog):
         :rtype: None
         """
 
-        # Declare private variables
-        #
-        self._skin = fnskin.FnSkin()
-        self._filePath = ''
-        self._maxInfluences = None
-        self._incomingInfluences = None
-        self._currentInfluences = None
-        self._influenceMap = None
-        self._vertices = None
-        self._points = None
-
         # Call parent method
         #
         super(QLoadWeightsDialog, self).__init__(*args, **kwargs)
+
+        # Declare private variables
+        #
+        self._skin = fnskin.FnSkin()
+        self._skinWeights = None
     # endregion
 
     # region Properties
     @property
     def skin(self):
         """
-        Getter method that returns the skin deformer.
+        Getter method that returns the skin.
 
         :return: fnskin.FnSkin
         """
@@ -59,69 +50,55 @@ class QLoadWeightsDialog(quicdialog.QUicDialog):
     @skin.setter
     def skin(self, skin):
         """
-        Setter method that updates the skin deformer.
+        Setter method that updates the skin.
 
-        :type skin: Union[om.MObject, pymxs.MXSWrapperBase]
+        :type skin: Any
         :rtype: None
         """
 
-        # Update function set object
-        #
-        success = self._skin.trySetObject(skin)
-
-        if not success:
-
-            return
-
-        # Get current influences
-        #
-        self._currentInfluences = {influenceId: influenceName for (influenceId, influenceName) in self._skin.influenceNames().items()}
-        self._influenceMap = dict(enumerate(self._currentInfluences.keys()))
-
-        # Invalidate user interface
-        #
+        self._skin.trySetObject(skin)
         self.invalidate()
 
     @property
-    def filePath(self):
+    def skinWeights(self):
         """
-        Getter method that returns the current file path.
+        Getter method that returns the skin weights.
 
-        :rtype: str
+        :return: fnskin.FnSkin
         """
 
-        return self._filePath
+        return self._skinWeights
 
-    @filePath.setter
-    def filePath(self, filePath):
+    @skinWeights.setter
+    def skinWeights(self, skinWeights):
         """
-        Setter method that updates the current file path.
+        Setter method that updates the skin weights.
 
-        :type filePath: str
+        :type skinWeights: skinweights.SkinWeights
         :rtype: None
         """
 
-        # Update private variable
-        #
-        self._filePath = filePath
-
-        # Load weights from file
-        # Be aware that json does not support numerical keys!
-        # So we have to cast all numerical keys to integers!
-        #
-        state = self.skin.loadWeights(filePath)
-
-        self._maxInfluences = int(state['maxInfluences'])
-        self._incomingInfluences = {int(influenceId): influenceName for (influenceId, influenceName) in state['influences'].items()}
-        self._vertices = {int(vertexIndex): {int(influenceId): weight for (influenceId, weight) in weights.items()} for (vertexIndex, weights) in state['vertices'].items()}
-        self._points = state['points']
-
-        # Invalidate user interface
-        #
+        self._skinWeights = skinWeights
         self.invalidate()
     # endregion
 
     # region Methods
+    def postLoad(self, *args, **kwargs):
+        """
+        Called after the user interface has been loaded.
+
+        :rtype: None
+        """
+
+        # Call parent method
+        #
+        super(QLoadWeightsDialog, self).postLoad(*args, **kwargs)
+
+        # Edit button group
+        #
+        self.methodButtonGroup.setId(self.indexRadioButton, 0)
+        self.methodButtonGroup.setId(self.positionRadioButton, 1)
+
     def matchInfluences(self):
         """
         Matches the incoming influences with the current influences.
@@ -179,14 +156,14 @@ class QLoadWeightsDialog(quicdialog.QUicDialog):
         # Iterate through rows
         #
         influenceMap = {}
+        influenceIds = list(self.skin.influences().keys())
+
         numRows = self.influenceTableWidget.rowCount()
 
         for i in range(numRows):
 
             comboBox = self.influenceTableWidget.cellWidget(i, 1)
-
-            currentIndex = comboBox.currentIndex()
-            influenceMap[i] = self._influenceMap[currentIndex]
+            influenceMap[i] = influenceIds[comboBox.currentIndex()]
 
         # Return influence map
         #
@@ -195,36 +172,43 @@ class QLoadWeightsDialog(quicdialog.QUicDialog):
 
     def invalidate(self):
         """
-        Invalidate method used to rebuild the table widget.
+        Repopulates the influence table widget items.
 
         :rtype: None
         """
 
-        # Check if xml weights are valid
+        # Check if skin and weights are valid
         #
-        if not self.skin.isValid() or not os.path.exists(self.filePath):
+        if not self.skin.isValid() or self.skinWeights is None:
 
             return
 
+        # Update row count
+        #
+        maxInfluenceId = max(self.skinWeights.influences.keys())
+        rowCount = maxInfluenceId + 1
+
+        self.influenceTableWidget.setRowCount(rowCount)
+        self.influenceTableWidget.setVerticalHeaderLabels(list(map(str, range(rowCount))))
+
         # Iterate through influences
         #
-        usedInfluenceIds = set(chain(*[vertexWeights.keys() for vertexWeights in self._vertices.values()]))
-        maxInfluenceId = max(self._incomingInfluences.keys())
-        maxRowCount = maxInfluenceId + 1
+        currentInfluences = self.skin.influenceNames()
+        incomingInfluences = self.skinWeights.influences
 
-        self.influenceTableWidget.setRowCount(maxRowCount)
+        usedInfluenceIds = set(chain(*[weights.keys() for weights in self.skinWeights.weights.values()]))
 
-        for influenceId in range(maxRowCount):
+        for influenceId in range(rowCount):
 
             # Create weighted influence item
             #
-            influenceName = self._incomingInfluences.get(influenceId, '')
+            influenceName = incomingInfluences.get(influenceId, '')
             tableItem = QtWidgets.QTableWidgetItem(influenceName)
 
             # Create remap combo box
             #
             comboBox = QtWidgets.QComboBox(parent=self.influenceTableWidget)
-            comboBox.addItems(list(self._currentInfluences.values()))
+            comboBox.addItems(list(currentInfluences.values()))
 
             # Assign items to table
             #
@@ -266,36 +250,15 @@ class QLoadWeightsDialog(quicdialog.QUicDialog):
 
         if method == 0:
 
-            # Apply weights
-            #
-            log.info('Loading weights by vertex index.')
-
-            vertices = self.skin.remapVertexWeights(self._vertices, influenceMap)
-            self.skin.applyVertexWeights(vertices)
+            self.skinWeights.applyWeights(self.skin, influenceMap=influenceMap)
 
         elif method == 1:
 
-            # Query point tree
-            #
-            log.info('Loading weights by closest point.')
-            tree = cKDTree(list(self._points.values()))
-
-            vertexMap = {x: y for (x, y) in enumerate(self._points.keys())}
-            distances, closestIndices = tree.query(self.skin.controlPoints())
-
-            # Remap vertex weights
-            #
-            closestVertexIndices = [vertexMap[x] for x in closestIndices]
-            vertices = {x + self.skin.arrayIndexType: deepcopy(self._vertices[x]) for x in closestVertexIndices}
-
-            # Apply weights
-            #
-            vertices = self.skin.remapVertexWeights(vertices, influenceMap)
-            self.skin.applyVertexWeights(vertices)
+            self.skinWeights.applyClosestWeights(self.skin, influenceMap=influenceMap)
 
         else:
 
-            raise RuntimeError('Unknown load method encountered!')
+            raise RuntimeError('accept() expects a valid method (%s given)!' % method)
 
     @QtCore.Slot(bool)
     def on_matchPushButton_clicked(self, clicked=False):
@@ -310,12 +273,13 @@ class QLoadWeightsDialog(quicdialog.QUicDialog):
     # endregion
 
 
-def loadSkinWeights(skin, filePath):
+def loadWeights(skin, filePath, parent=None):
     """
     Loads the skin weights from the specified file onto the supplied skin deformer.
 
     :type skin: Union[om.MObject, pymxs.runtime.MXSWrapperBase]
     :type filePath: str
+    :type parent: QtWidgets.QWidget
     :rtype: None
     """
 
@@ -327,7 +291,8 @@ def loadSkinWeights(skin, filePath):
 
     # Initialize dialog from skin
     #
-    dialog = QLoadWeightsDialog(skin=skin, filePath=filePath)
+    skinWeights = skinutils.importWeights(filePath)
+    dialog = QLoadWeightsDialog(skin=skin, skinWeights=skinWeights, parent=parent)
 
     if dialog.skin.isValid():
 

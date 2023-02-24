@@ -8,11 +8,13 @@ log.setLevel(logging.INFO)
 
 class QInfluenceView(QtWidgets.QTableView):
     """
-    Overload of QTableView used to display skin influences.
+    Overload of `QTableView` that displays skin influences.
     This widget also has builtin auto select functionality for buddies.
     """
 
+    # region Signals
     synchronized = QtCore.Signal()
+    # endregion
 
     # region Dunderscores
     def __init__(self, parent=None):
@@ -86,7 +88,7 @@ class QInfluenceView(QtWidgets.QTableView):
 
     def setAutoSelect(self, autoSelect):
         """
-        Evaluates the auto select state.
+        Returns the auto select state.
 
         :type autoSelect: bool
         :rtype: None
@@ -96,7 +98,7 @@ class QInfluenceView(QtWidgets.QTableView):
 
     def beginSelectionUpdate(self):
         """
-        Changes the filter state to prevent cyclical errors.
+        Changes the pending state to prevent cyclical errors.
 
         :rtype: None
         """
@@ -105,7 +107,7 @@ class QInfluenceView(QtWidgets.QTableView):
 
     def endSelectionUpdate(self):
         """
-        Changes the filter state to prevent cyclical errors.
+        Changes the pending state to prevent cyclical errors.
 
         :rtype: None
         """
@@ -114,7 +116,7 @@ class QInfluenceView(QtWidgets.QTableView):
 
     def isPending(self):
         """
-        Evaluates if this widget is currently synchronizing its sibling.
+        Evaluates if this widget is currently synchronizing with its sibling.
 
         :rtype: bool
         """

@@ -22,7 +22,7 @@ def exportWeights(filePath, skin):
 
     with open(filePath, 'w') as jsonFile:
 
-        log.info('Exporting pose to: %s' % filePath)
+        log.info('Exporting skin weights to: %s' % filePath)
         json.dump(skinWeights, jsonFile, cls=psonparser.PSONEncoder, indent=4)
 
 

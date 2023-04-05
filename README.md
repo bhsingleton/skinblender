@@ -20,7 +20,7 @@ Once you've downloaded ezskinblender, move the folder into one of the Maya scrip
 You will also need to repeat this process for the dcc package: https://github.com/bhsingleton/dcc/  
 Once you're done you can launch the tool with the following command:  
   
-> from ezskinblender import qezskinblender;  
+> from ezskinblender.ui import qezskinblender;  
 > window = qezskinblender.QEzSkinBlender();  
 > window.show();  
   
@@ -29,7 +29,7 @@ Creating hotkeys is super easy.
 QVertexBlender is derived from QProxyWindow which uses a singleton pattern for instances.  
 An example of a hotkey can be as simple as:  
   
-> from ezskinblender import qezskinblender;  
+> from ezskinblender.ui import qezskinblender;  
 > window = qezskinblender.QEzSkinBlender.getInstance();  
 > window.blendVertices();  
   

@@ -42,7 +42,7 @@ class QLoadWeightsDialog(quicdialog.QUicDialog):
         """
         Getter method that returns the skin.
 
-        :return: fnskin.FnSkin
+        :rtype: fnskin.FnSkin
         """
 
         return self._skin
@@ -64,7 +64,7 @@ class QLoadWeightsDialog(quicdialog.QUicDialog):
         """
         Getter method that returns the skin weights.
 
-        :return: fnskin.FnSkin
+        :rtype: skinweights.SkinWeights
         """
 
         return self._skinWeights
@@ -196,7 +196,7 @@ class QLoadWeightsDialog(quicdialog.QUicDialog):
         currentInfluences = self.skin.influenceNames()
         incomingInfluences = self.skinWeights.influences
 
-        usedInfluenceIds = set(chain(*[weights.keys() for weights in self.skinWeights.weights.values()]))
+        usedInfluenceIds = set(chain(*[weights.keys() for weights in self.skinWeights.weights]))
 
         for influenceId in range(rowCount):
 
@@ -234,7 +234,7 @@ class QLoadWeightsDialog(quicdialog.QUicDialog):
     @QtCore.Slot()
     def accept(self):
         """
-        Hides the modal dialog and sets the result code to QDialogCode.Accepted.
+        Hides the modal dialog and sets the result code to `Accepted`.
 
         :rtype: None
         """
@@ -275,7 +275,7 @@ class QLoadWeightsDialog(quicdialog.QUicDialog):
 
 def loadWeights(skin, filePath, parent=None):
     """
-    Loads the skin weights from the specified file onto the supplied skin deformer.
+    Loads the skin weights from the specified file onto the supplied skin.
 
     :type skin: Union[om.MObject, pymxs.runtime.MXSWrapperBase]
     :type filePath: str
@@ -291,7 +291,7 @@ def loadWeights(skin, filePath, parent=None):
 
     # Initialize dialog from skin
     #
-    skinWeights = skinutils.importWeights(filePath)
+    skinWeights = skinutils.importSkin(filePath)
     dialog = QLoadWeightsDialog(skin=skin, skinWeights=skinWeights, parent=parent)
 
     if dialog.skin.isValid():

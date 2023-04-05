@@ -1,4 +1,5 @@
 from scipy.spatial import cKDTree
+from dcc import fnskin
 from dcc.json import psonobject
 from dcc.python import stringutils
 from dcc.dataclasses.vector import Vector
@@ -24,7 +25,7 @@ class SkinWeights(psonobject.PSONObject):
         :key name: str
         :key influences: List[str]
         :key maxInfluences: int
-        :key vertexWeights: Dict[int, Dict[int, float]]
+        :key vertexWeights: List[Dict[int, float]]
         :key controlPoints: List[Vector]
         :rtype: None
         """
@@ -34,7 +35,7 @@ class SkinWeights(psonobject.PSONObject):
         self._name = kwargs.get('name', '')
         self._influences = kwargs.get('influences', {})
         self._maxInfluences = kwargs.get('maxInfluences', 4)
-        self._weights = kwargs.get('weights', {})
+        self._weights = kwargs.get('weights', [])
         self._points = kwargs.get('points', [])
 
         # Call parent method
@@ -112,7 +113,7 @@ class SkinWeights(psonobject.PSONObject):
         """
         Getter method that returns the skin weights.
 
-        :rtype: Dict[int, Dict[int, float]]
+        :rtype: List[Dict[int, float]]
         """
 
         return self._weights
@@ -120,19 +121,19 @@ class SkinWeights(psonobject.PSONObject):
     @weights.setter
     def weights(self, weights):
         """
-        Setter method that updates the skin weight.
+        Setter method that updates the skin weights.
 
-        :type weights: Dict[int, Dict[int, float]]
+        :type weights: List[Dict[int, float]]
         :rtype: None
         """
 
         self._weights.clear()
-        self._weights.update({stringutils.eval(vertexIndex): {stringutils.eval(influenceId): weight for (influenceId, weight) in vertexWeights.items()} for (vertexIndex, vertexWeights) in weights.items()})
+        self._weights.extend([{stringutils.eval(influenceId): influenceWeight for (influenceId, influenceWeight) in influenceWeights.items()} for influenceWeights in weights])
 
     @property
     def points(self):
         """
-        Getter method that returns the control points.
+        Getter method that returns the vertex points.
 
         :rtype: List[Vector]
         """
@@ -142,7 +143,7 @@ class SkinWeights(psonobject.PSONObject):
     @points.setter
     def points(self, points):
         """
-        Setter method that updates the control points.
+        Setter method that updates the vertex points.
 
         :type points: List[Vector]
         :rtype: None
@@ -168,7 +169,7 @@ class SkinWeights(psonobject.PSONObject):
 
     def applyWeights(self, skin, influenceMap=None):
         """
-        Applies the vertex weights to the supplied skin.
+        Applies the skin weights to the supplied skin.
 
         :type skin: fnskin.FnSkin
         :type influenceMap: Dict[int, int]
@@ -181,14 +182,25 @@ class SkinWeights(psonobject.PSONObject):
 
             influenceMap = self.remapInfluences(skin)
 
+        # Check if vertex counts are identical
+        #
+        pointCount = len(self.points)
+        incomingCount = skin.numControlPoints()
+
+        if pointCount != incomingCount:
+
+            raise TypeError(f'applyWeights() expects {pointCount} vertices ({incomingCount} given)!')
+
         # Remap and apply weights
         #
-        vertexWeights = skin.remapVertexWeights(self.weights, influenceMap)
-        skin.applyVertexWeights(vertexWeights)
+        vertexWeights = {vertexIndex: weights for (vertexIndex, weights) in enumerate(self.weights, start=skin.arrayIndexType)}
+        remappedWeights = skin.remapVertexWeights(vertexWeights, influenceMap)
+
+        skin.applyVertexWeights(remappedWeights)
 
     def applyClosestWeights(self, skin, influenceMap=None):
         """
-        Applies the closest vertex weights to the supplied skin.
+        Applies the closest skin weights to the supplied skin.
 
         :type skin: fnskin.FnSkin
         :type influenceMap: Dict[int, int]
@@ -208,10 +220,23 @@ class SkinWeights(psonobject.PSONObject):
 
         # Apply weights
         #
-        vertexWeights = {vertexIndex + skin.arrayIndexType: self.weights[closestIndex + skin.arrayIndexType] for (vertexIndex, closestIndex) in enumerate(closestIndices)}
-        vertexWeights = skin.remapVertexWeights(vertexWeights, influenceMap)
+        vertexWeights = {vertexIndex + skin.arrayIndexType: self.weights[closestIndex] for (vertexIndex, closestIndex) in enumerate(closestIndices)}
+        remappedWeights = skin.remapVertexWeights(vertexWeights, influenceMap)
 
-        skin.applyVertexWeights(vertexWeights)
+        skin.applyVertexWeights(remappedWeights)
+
+    def applySkin(self, mesh):
+        """
+        Applies the closest skin weights to the supplied skin.
+
+        :type mesh: fnmesh.FnMesh
+        :rtype: None
+        """
+
+        skin = fnskin.FnSkin.create(mesh)
+        skin.addInfluence(*list(self.influences.values()))
+
+        self.applyClosestWeights(skin)
 
     @classmethod
     def create(cls, skin):
@@ -226,7 +251,7 @@ class SkinWeights(psonobject.PSONObject):
             name=skin.name(),
             influences=skin.influenceNames(),
             maxInfluences=skin.maxInfluences(),
-            weights=skin.vertexWeights(),
+            weights=list(skin.vertexWeights().values()),
             points=skin.controlPoints()
         )
     # endregion

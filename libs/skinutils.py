@@ -9,16 +9,27 @@ log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
 
 
-def exportWeights(filePath, skin):
+def cacheSkin(skin):
     """
-    Exports the skin weights from the supplied skin to the specified path.
+    Returns a skin cache using the supplied skin.
+
+    :type skin: fnskin.FnSkin
+    :rtype: Skin
+    """
+
+    return SkinWeights.create(skin)
+
+
+def exportSkin(filePath, skin):
+    """
+    Exports the supplied skin to the specified path.
 
     :type filePath: str
     :type skin: fnskin.FnSkin
     :rtype: None
     """
 
-    skinWeights = SkinWeights.create(skin)
+    skinWeights = cacheSkin(skin)
 
     with open(filePath, 'w') as jsonFile:
 
@@ -26,9 +37,9 @@ def exportWeights(filePath, skin):
         json.dump(skinWeights, jsonFile, cls=psonparser.PSONEncoder, indent=4)
 
 
-def importWeights(filePath):
+def importSkin(filePath):
     """
-    Exports the skin weights from the specified path.
+    Imports a skin from the specified path.
 
     :type filePath: str
     :rtype: SkinWeights

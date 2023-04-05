@@ -2,7 +2,7 @@ import os
 import webbrowser
 
 from Qt import QtCore, QtWidgets, QtGui
-from dcc import fnscene, fnnode, fnskin, fnnotify
+from dcc import fnscene, fnnode, fnmesh, fnskin, fnnotify
 from dcc.ui import quicwindow
 from .dialogs import qeditinfluencesdialog, qeditweightsdialog
 from .models import qinfluenceitemfiltermodel
@@ -56,6 +56,10 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         :rtype: None
         """
 
+        # Call parent method
+        #
+        super(QEzSkinBlender, self).__init__(*args, **kwargs)
+
         # Declare private variables
         #
         self._scene = fnscene.FnScene()
@@ -90,10 +94,6 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         self.nearestNeighbourAction = None
         self.alongNormalAction = None
         self.slabActionGroup = None
-
-        # Call parent method
-        #
-        super(QEzSkinBlender, self).__init__(*args, **kwargs)
     # endregion
 
     # region Properties
@@ -222,7 +222,8 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         self.influenceItemFilterModel.setSourceModel(self.influenceItemModel)
 
         self.influenceTable.setModel(self.influenceItemFilterModel)
-
+        self.influenceTable.selectionModel().selectionChanged.connect(self.on_influenceSelectionModel_selectionChanged)
+        
         # Initialize weight item model
         #
         self.weightItemModel = QtGui.QStandardItemModel(parent=self.weightTable)
@@ -440,7 +441,7 @@ class QEzSkinBlender(quicwindow.QUicWindow):
     @validate
     def pasteWeights(self, average=False):
         """
-        Pastes the skin weights to the current skin.
+        Pastes the internal weights to the current skin.
 
         :type average: bool
         :rtype: None
@@ -470,6 +471,66 @@ class QEzSkinBlender(quicwindow.QUicWindow):
 
         self.skin.slabPasteWeights(self.selection(), mode=self.slabOption)
         self.invalidateWeights()
+
+    def copySkin(self):
+        """
+        Copies the skin from the selected mesh.
+
+        :rtype: None
+        """
+
+        # Evaluate active selection
+        #
+        selection = self.scene.getActiveSelection()
+        selectionCount = len(selection)
+
+        if selectionCount == 0:
+
+            log.warning('Invalid selection!')
+            return
+
+        # Check if selection is valid
+        #
+        skin = fnskin.FnSkin()
+        success = skin.trySetObject(selection[0])
+
+        if success:
+
+            self._clipboard = skinutils.cacheSkin(skin)
+
+        else:
+
+            log.warning('Invalid skin selected!')
+
+    def pasteSkin(self):
+        """
+        Pastes the internal skin to the selected mesh.
+
+        :rtype: None
+        """
+
+        # Evaluate active selection
+        #
+        selection = self.scene.getActiveSelection()
+        selectionCount = len(selection)
+
+        if selectionCount == 0:
+
+            log.warning('Invalid selection!')
+            return
+
+        # Check if selection and clipboard are valid
+        #
+        mesh = fnmesh.FnMesh()
+        success = mesh.trySetObject(selection[0])
+
+        if success and self._clipboard is not None:
+
+            self._clipboard.applySkin(mesh)
+
+        else:
+
+            log.warning('Invalid mesh selected!')
 
     @validate
     def blendVertices(self):
@@ -729,7 +790,8 @@ class QEzSkinBlender(quicwindow.QUicWindow):
     @QtCore.Slot(bool)
     def on_envelopePushButton_toggled(self, checked):
         """
-        Toggled slot method called whenever the user enters edit envelope mode.
+        Slot method for the envelopePushButton's `toggled` signal.
+        Toggles the edit envelope mode.
 
         :type checked: bool
         :rtype: None
@@ -778,7 +840,7 @@ class QEzSkinBlender(quicwindow.QUicWindow):
             self.invalidateSelection()
             self.influenceTable.selectFirstRow()
 
-        elif self.skin.isValid():
+        else:
 
             # Clear notifies
             #
@@ -786,17 +848,15 @@ class QEzSkinBlender(quicwindow.QUicWindow):
 
             # Reset skin function set
             #
-            self.skin.hideColors()
-            self.skin.resetObject()
+            if self.skin.isValid():
+
+                self.skin.hideColors()
+                self.skin.resetObject()
 
             # Reset item models
             #
             self.influenceItemModel.setRowCount(0)
             self.weightItemModel.setRowCount(0)
-
-        else:
-
-            pass
 
     @QtCore.Slot(bool)
     def on_saveWeightsAction_triggered(self, checked=False):
@@ -848,7 +908,7 @@ class QEzSkinBlender(quicwindow.QUicWindow):
 
             if len(filePath) > 0:
 
-                skinutils.exportWeights(filePath, skin)
+                skinutils.exportSkin(filePath, skin)
 
             else:
 
@@ -889,7 +949,7 @@ class QEzSkinBlender(quicwindow.QUicWindow):
                 nodeName = fnnode.FnNode(skin.transform()).name()
                 filePath = os.path.join(directory, '{name}.json'.format(name=nodeName))
 
-                skinutils.exportWeights(filePath, skin)
+                skinutils.exportSkin(filePath, skin)
 
     @QtCore.Slot(bool)
     def on_loadWeightsAction_triggered(self, checked=False):
@@ -1050,6 +1110,28 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         self.pasteWeights()
 
     @QtCore.Slot(bool)
+    def on_copySkinAction_triggered(self, checked=False):
+        """
+        Slot method for the copySkinAction's `triggered` signal.
+
+        :type checked: bool
+        :rtype: None
+        """
+
+        self.copySkin()
+
+    @QtCore.Slot(bool)
+    def on_pasteSkinAction_triggered(self, checked=False):
+        """
+        Slot method for the pasteSkinAction's `triggered` signal.
+
+        :type checked: bool
+        :rtype: None
+        """
+
+        self.pasteSkin()
+
+    @QtCore.Slot(bool)
     def on_pasteAverageWeightsAction_triggered(self, checked=False):
         """
         Triggered slot method responsible for pasting averaged skin weights to the active selection.
@@ -1134,12 +1216,14 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         self.invalidateInfluences()
         self.invalidateWeights()
 
-    @QtCore.Slot(QtCore.QModelIndex)
-    def on_influenceTable_clicked(self, index):
+    @QtCore.Slot(QtCore.QItemSelection, QtCore.QItemSelection)
+    def on_influenceSelectionModel_selectionChanged(self, selected, deselected):
         """
-        Clicked slot method responsible for updating the current influence.
+        Slot method for the influenceSelectionModel's `selectionChanged signal.
+        Updates the influence colours based on the selected influence item.
 
-        :type index: QtCore.QModelIndex
+        :type selected: QtCore.QItemSelection
+        :type deselected: QtCore.QItemSelection
         :rtype: None
         """
 
@@ -1159,35 +1243,12 @@ class QEzSkinBlender(quicwindow.QUicWindow):
             self.skin.selectInfluence(self._currentInfluence)
             self.invalidateColors()
 
-    @QtCore.Slot(QtCore.QModelIndex)
-    def on_weightTable_clicked(self, index):
-        """
-        Clicked slot method responsible for updating the current influence.
-
-        :type index: QtCore.QModelIndex
-        :rtype: None
-        """
-
-        # Get selected rows from table
-        #
-        rows = self.weightTable.selectedRows()
-        numRows = len(rows)
-
-        if numRows == 1 and not self.precision:
-
-            # Update current influence
-            #
-            self._currentInfluence = rows[0]
-
-            # Select influence and redraw
-            #
-            self.skin.selectInfluence(self._currentInfluence)
-            self.invalidateColors()
-
     @QtCore.Slot(QtCore.QPoint)
     def on_weightTable_customContextMenuRequested(self, point):
         """
-        Trigger function used to display a context menu under certain conditions.
+        Slot method for the weightTable's `customContextMenuRequested signal.
+        Displays the weight table menu the selected influence-weight item.
+
         :type point: QtCore.QPoint
         :rtype: None
         """

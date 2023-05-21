@@ -18,6 +18,10 @@ class QEditInfluencesDialog(quicdialog.QUicDialog):
     def __init__(self, *args, **kwargs):
         """
         Private method called after a new instance has been created.
+
+        :key parent: QtWidgets.QMainWindow
+        :key f: QtCore.Qt.WindowFlags
+        :rtype: None
         """
 
         # Call parent method

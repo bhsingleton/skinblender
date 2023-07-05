@@ -34,6 +34,19 @@ class QLoadWeightsDialog(quicdialog.QUicDialog):
         #
         self._skin = fnskin.FnSkin()
         self._skinWeights = None
+
+        # Declare public variables
+        #
+        self.influenceGroupBox = None
+        self.influenceTableWidget = None
+        self.buttonsWidget = None
+        self.methodLabel = None
+        self.indexRadioButton = None
+        self.positionRadioButton = None
+        self.methodButtonGroup = None
+        self.matchPushButton = None
+        self.okayPushButton = None
+        self.cancelPushButton = None
     # endregion
 
     # region Properties
@@ -96,8 +109,11 @@ class QLoadWeightsDialog(quicdialog.QUicDialog):
 
         # Edit button group
         #
-        self.methodButtonGroup.setId(self.indexRadioButton, 0)
-        self.methodButtonGroup.setId(self.positionRadioButton, 1)
+        self.methodButtonGroup = QtWidgets.QButtonGroup(parent=self.buttonsWidget)
+        self.methodButtonGroup.setObjectName('methodButtonGroup')
+        self.methodButtonGroup.setExclusive(True)
+        self.methodButtonGroup.addButton(self.indexRadioButton, id=0)
+        self.methodButtonGroup.addButton(self.positionRadioButton, id=1)
 
     def matchInfluences(self):
         """

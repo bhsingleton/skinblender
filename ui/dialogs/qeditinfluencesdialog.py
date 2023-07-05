@@ -35,8 +35,13 @@ class QEditInfluencesDialog(quicdialog.QUicDialog):
 
         # Declare public variables
         #
+        self.filterLineEdit = None
+        self.influenceTreeView = None
         self.influenceItemModel = None  # type: QtGui.QStandardItemModel
         self.influenceItemFilterModel = None  # type: QtCore.QSortFilterProxyModel
+        self.buttonsWidget = None
+        self.okayPushButton = None
+        self.cancelPushButton = None
     # endregion
 
     # region Properties
@@ -45,8 +50,7 @@ class QEditInfluencesDialog(quicdialog.QUicDialog):
         """
         Getter method used to retrieve the skin cluster object.
 
-        :return: fnskin.FnSkin
-
+        :rtype: fnskin.FnSkin
         """
 
         return self._skin

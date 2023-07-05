@@ -40,7 +40,7 @@ def validate(func):
 
 class QEzSkinBlender(quicwindow.QUicWindow):
     """
-    Overload of QProxyWindow used to manipulate vertex weights.
+    Overload of `QUicWindow` that manipulates skin weights.
     """
 
     # region Dunderscores
@@ -81,10 +81,84 @@ class QEzSkinBlender(quicwindow.QUicWindow):
 
         # Declare public variables
         #
+        self.fileMenu = None
+        self.saveWeightsAction = None
+        self.loadWeightsAction = None
+
+        self.editMenu = None
+        self.copyWeightsAction = None
+        self.pasteWeightsAction = None
+        self.pasteAverageWeightsAction = None
+        self.copySkinAction = None
+        self.pasteSkinAction = None
+        self.blendVerticesAction = None
+        self.blendBetweenVerticesAction = None
+        self.blendByDistanceAction = None
+        self.resetIntermediateObjectAction = None
+        self.resetBindPreMatricesAction = None
+
+        self.settingsMenu = None
+        self.xAction = None
+        self.yAction = None
+        self.zAction = None
+        self.setMirrorToleranceAction = None
+
+        self.helpMenu = None
+        self.usingEzSkinBlenderAction = None
+
+        self.envelopeGroupBox = None
+        self.envelopePushButton = None
+
+        self.skinWidget = None
+        self.skinSplitter = None
+
+        self.influenceWidget = None
+        self.influenceHeader = None
+        self.searchLineEdit = None
+        self.influenceTable = None
         self.influenceItemModel = None
         self.influenceItemFilterModel = None
+        self.influenceInteropWidget = None
+        self.addInfluencePushButton = None
+        self.removeInfluencePushButton = None
+        self.influenceFooter = None
+
+        self.weightWidget = None
+        self.weightHeader = None
+        self.weightTable = None
         self.weightItemModel = None
         self.weightItemFilterModel = None
+        self.modeWidget = None
+        self.precisionCheckBox = None
+        self.selectShellCheckBox = None
+        self.optionsWidget = None
+        self.mirrorWidget = None
+        self.mirrorPushButton = None
+        self.pullPushButton = None
+        self.slabDropDownButton = None
+        self.weightPresetWidget = None
+        self.weightPresetPushButton1 = None
+        self.weightPresetPushButton2 = None
+        self.weightPresetPushButton3 = None
+        self.weightPresetPushButton4 = None
+        self.weightPresetPushButton5 = None
+        self.weightPresetPushButton6 = None
+        self.weightPresetPushButton7 = None
+        self.setWeightLabel = None
+        self.setWeightSpinBox = None
+        self.setWeightPushButton1 = None
+        self.setWeightPushButton2 = None
+        self.incrementWeightLabel = None
+        self.incrementWeightSpinBox = None
+        self.incrementWeightWidget = None
+        self.incrementWeightPushButton1 = None
+        self.incrementWeightPushButton2 = None
+        self.scaleWeightLabel = None
+        self.scaleWeightSpinBox = None
+        self.scaleWeightWidget = None
+        self.scaleWeightPushButton1 = None
+        self.scaleWeightPushButton2 = None
+        self.weightFooter = None
 
         self.weightTableMenu = None
         self.selectAffectedVerticesAction = None
@@ -300,47 +374,49 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         self.scaleWeightButtonGroup.setId(self.scaleWeightPushButton1, 0)  # +
         self.scaleWeightButtonGroup.setId(self.scaleWeightPushButton2, 1)  # -
 
-    def saveSettings(self):
+    def saveSettings(self, settings):
         """
         Saves the user settings.
 
+        :type settings: QtCore.QSettings
         :rtype: None
         """
 
         # Call parent method
         #
-        super(QEzSkinBlender, self).saveSettings()
+        super(QEzSkinBlender, self).saveSettings(settings)
 
         # Save user settings
         #
-        self.settings.setValue('editor/mirrorAxis', self.mirrorAxis)
-        self.settings.setValue('editor/mirrorTolerance', self.mirrorTolerance)
-        self.settings.setValue('editor/blendByDistance', int(self.blendByDistance))
-        self.settings.setValue('editor/slabOption', self.slabOption)
+        settings.setValue('editor/mirrorAxis', self.mirrorAxis)
+        settings.setValue('editor/mirrorTolerance', self.mirrorTolerance)
+        settings.setValue('editor/blendByDistance', int(self.blendByDistance))
+        settings.setValue('editor/slabOption', self.slabOption)
 
-    def loadSettings(self):
+    def loadSettings(self, settings):
         """
         Loads the user settings.
 
+        :type settings: QtCore.QSettings
         :rtype: None
         """
 
         # Call parent method
         #
-        super(QEzSkinBlender, self).loadSettings()
+        super(QEzSkinBlender, self).loadSettings(settings)
 
         # Load user settings
         #
-        mirrorAxis = int(self.settings.value('editor/mirrorAxis', defaultValue=0))
+        mirrorAxis = int(settings.value('editor/mirrorAxis', defaultValue=0))
         self.mirrorAxisActionGroup.actions()[mirrorAxis].setChecked(True)
 
-        blendByDistance = bool(self.settings.value('editor/blendByDistance', defaultValue=0))
+        blendByDistance = bool(settings.value('editor/blendByDistance', defaultValue=0))
         self.blendByDistanceAction.setChecked(blendByDistance)
 
-        slabOption = int(self.settings.value('editor/slabOption', defaultValue=0))
+        slabOption = int(settings.value('editor/slabOption', defaultValue=0))
         self.slabActionGroup.actions()[slabOption].setChecked(True)
 
-        self.mirrorTolerance = float(self.settings.value('editor/mirrorTolerance', defaultValue='1e-3'))
+        self.mirrorTolerance = float(settings.value('editor/mirrorTolerance', defaultValue='1e-3'))
 
     def selection(self):
         """

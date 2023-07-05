@@ -74,7 +74,7 @@
     </widget>
    </item>
    <item>
-    <widget class="QWidget" name="interopWidget" native="true">
+    <widget class="QWidget" name="buttonsWidget" native="true">
      <layout class="QHBoxLayout" name="interopLayout">
       <property name="leftMargin">
        <number>0</number>

@@ -83,7 +83,7 @@
     </widget>
    </item>
    <item>
-    <widget class="QWidget" name="widget" native="true">
+    <widget class="QWidget" name="buttonsWidget" native="true">
      <layout class="QHBoxLayout" name="horizontalLayout">
       <property name="leftMargin">
        <number>0</number>
@@ -98,7 +98,7 @@
        <number>0</number>
       </property>
       <item>
-       <widget class="QLabel" name="loadLabel">
+       <widget class="QLabel" name="methodLabel">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
           <horstretch>0</horstretch>
@@ -119,6 +119,9 @@
         </property>
         <property name="text">
          <string>Load By:</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
         </property>
        </widget>
       </item>
@@ -142,9 +145,6 @@
         <property name="checked">
          <bool>true</bool>
         </property>
-        <attribute name="buttonGroup">
-         <string notr="true">methodButtonGroup</string>
-        </attribute>
        </widget>
       </item>
       <item>
@@ -164,9 +164,6 @@
         <property name="text">
          <string>Position</string>
         </property>
-        <attribute name="buttonGroup">
-         <string notr="true">methodButtonGroup</string>
-        </attribute>
        </widget>
       </item>
       <item>
@@ -291,7 +288,4 @@
    </hints>
   </connection>
  </connections>
- <buttongroups>
-  <buttongroup name="methodButtonGroup"/>
- </buttongroups>
 </ui>

@@ -162,7 +162,7 @@ class SkinWeights(psonobject.PSONObject):
         :rtype: Dict[int, int]
         """
 
-        influenceNames = {influenceName: influenceId for (influenceId, influenceName) in skin.influenceNames()}
+        influenceNames = {influenceName: influenceId for (influenceId, influenceName) in skin.influenceNames().items()}
         influenceMap = {influenceId: influenceNames.get(influenceName, influenceId) for (influenceId, influenceName) in self.influences.items()}
 
         return influenceMap

@@ -95,13 +95,19 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         self.blendBetweenVerticesAction = None
         self.blendByDistanceAction = None
         self.resetIntermediateObjectAction = None
-        self.resetBindPreMatricesAction = None
+        self.resetPreBindMatricesAction = None
 
         self.settingsMenu = None
-        self.xAction = None
-        self.yAction = None
-        self.zAction = None
+        self.mirrorAxisSection = None
+        self.mirrorXAction = None
+        self.mirrorYAction = None
+        self.mirrorZAction = None
+        self.mirrorAxisActionGroup = None
+        self.mirrorSeparator = None
         self.setMirrorToleranceAction = None
+
+        self.debugMenu = None
+        self.resetActiveSelectionAction = None
 
         self.helpMenu = None
         self.usingEzSkinBlenderAction = None
@@ -284,6 +290,120 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         # Call parent method
         #
         super(QEzSkinBlender, self).postLoad(*args, **kwargs)
+
+        # Add file menu actions
+        #
+        self.saveWeightsAction = QtWidgets.QAction('Save Weights', parent=self.fileMenu)
+        self.saveWeightsAction.setObjectName('saveWeightsAction')
+        self.saveWeightsAction.triggered.connect(self.on_saveWeightsAction_triggered)
+
+        self.loadWeightsAction = QtWidgets.QAction('Load Weights', parent=self.fileMenu)
+        self.loadWeightsAction.setObjectName('loadWeightsAction')
+        self.loadWeightsAction.triggered.connect(self.on_loadWeightsAction_triggered)
+
+        self.fileMenu.addActions([self.saveWeightsAction, self.loadWeightsAction])
+
+        # Add edit menu actions
+        #
+        self.copyWeightsAction = QtWidgets.QAction('Copy Weights', parent=self.editMenu)
+        self.copyWeightsAction.setObjectName('copyWeightsAction')
+        self.copyWeightsAction.triggered.connect(self.on_copyWeightsAction_triggered)
+
+        self.pasteWeightsAction = QtWidgets.QAction('Paste Weights', parent=self.editMenu)
+        self.pasteWeightsAction.setObjectName('pasteWeightsAction')
+        self.pasteWeightsAction.triggered.connect(self.on_pasteWeightsAction_triggered)
+
+        self.pasteAverageWeightsAction = QtWidgets.QAction('Paste Average Weights', parent=self.editMenu)
+        self.pasteAverageWeightsAction.setObjectName('pasteAverageWeightsAction')
+        self.pasteAverageWeightsAction.triggered.connect(self.on_pasteAverageWeightsAction_triggered)
+
+        self.copySkinAction = QtWidgets.QAction('Copy Skin', parent=self.editMenu)
+        self.copySkinAction.setObjectName('copySkinAction')
+        self.copySkinAction.triggered.connect(self.on_copySkinAction_triggered)
+
+        self.pasteSkinAction = QtWidgets.QAction('Paste Skin', parent=self.editMenu)
+        self.pasteSkinAction.setObjectName('pasteSkinAction')
+        self.pasteSkinAction.triggered.connect(self.on_pasteSkinAction_triggered)
+
+        self.blendVerticesAction = QtWidgets.QAction('Blend Vertices', parent=self.editMenu)
+        self.blendVerticesAction.setObjectName('blendVerticesAction')
+        self.blendVerticesAction.triggered.connect(self.on_blendVerticesAction_triggered)
+
+        self.blendBetweenVerticesAction = QtWidgets.QAction('Blend Between Vertices', parent=self.editMenu)
+        self.blendBetweenVerticesAction.setObjectName('blendBetweenVerticesAction')
+        self.blendBetweenVerticesAction.triggered.connect(self.on_blendBetweenVerticesAction_triggered)
+
+        self.blendByDistanceAction = QtWidgets.QAction('Blend By Distance', parent=self.editMenu)
+        self.blendByDistanceAction.setObjectName('blendByDistanceAction')
+        self.blendByDistanceAction.setCheckable(True)
+
+        self.resetIntermediateObjectAction = QtWidgets.QAction('Reset Intermediate Object', parent=self.editMenu)
+        self.resetIntermediateObjectAction.setObjectName('resetIntermediateObjectAction')
+        self.resetIntermediateObjectAction.triggered.connect(self.on_resetIntermediateObjectAction_triggered)
+
+        self.resetPreBindMatricesAction = QtWidgets.QAction('Reset Pre-Bind Matrices', parent=self.editMenu)
+        self.resetPreBindMatricesAction.setObjectName('resetPreBindMatricesAction')
+        self.resetPreBindMatricesAction.triggered.connect(self.on_resetPreBindMatricesAction_triggered)
+
+        self.editMenu.addActions([self.copyWeightsAction, self.pasteWeightsAction, self.pasteAverageWeightsAction])
+        self.editMenu.addSeparator()
+        self.editMenu.addActions([self.copySkinAction, self.pasteSkinAction])
+        self.editMenu.addSeparator()
+        self.editMenu.addActions([self.blendVerticesAction, self.blendBetweenVerticesAction, self.blendByDistanceAction])
+        self.editMenu.addSeparator()
+        self.editMenu.addActions([self.resetIntermediateObjectAction, self.resetPreBindMatricesAction])
+
+        # Add settings menu actions
+        #
+        self.mirrorAxisSection = QtWidgets.QAction('Mirror Axis:', parent=self.settingsMenu)
+        self.mirrorAxisSection.setObjectName('mirrorAxisSection')
+        self.mirrorAxisSection.setSeparator(True)
+
+        self.mirrorXAction = QtWidgets.QAction('X', parent=self.settingsMenu)
+        self.mirrorXAction.setObjectName('mirrorXAction')
+        self.mirrorXAction.setCheckable(True)
+        self.mirrorXAction.setChecked(True)
+
+        self.mirrorYAction = QtWidgets.QAction('Y', parent=self.settingsMenu)
+        self.mirrorYAction.setObjectName('mirrorYAction')
+        self.mirrorYAction.setCheckable(True)
+
+        self.mirrorZAction = QtWidgets.QAction('Z', parent=self.settingsMenu)
+        self.mirrorZAction.setObjectName('mirrorZAction')
+        self.mirrorZAction.setCheckable(True)
+
+        self.mirrorAxisActionGroup = QtWidgets.QActionGroup(self.settingsMenu)
+        self.mirrorAxisActionGroup.addAction(self.mirrorXAction)
+        self.mirrorAxisActionGroup.addAction(self.mirrorYAction)
+        self.mirrorAxisActionGroup.addAction(self.mirrorZAction)
+
+        self.mirrorSeparator = QtWidgets.QAction('', parent=self.settingsMenu)
+        self.mirrorSeparator.setObjectName('mirrorSeparator')
+        self.mirrorSeparator.setSeparator(True)
+
+        self.setMirrorToleranceAction = QtWidgets.QAction('Set Mirror Tolerance', parent=self.settingsMenu)
+        self.setMirrorToleranceAction.setObjectName('setMirrorToleranceAction')
+        self.setMirrorToleranceAction.triggered.connect(self.on_setMirrorToleranceAction_triggered)
+
+        self.settingsMenu.addActions([self.mirrorAxisSection, self.mirrorXAction, self.mirrorYAction, self.mirrorZAction])
+        self.settingsMenu.addSeparator()
+        self.settingsMenu.addAction(self.setMirrorToleranceAction)
+
+        # Add debug menu actions
+        #
+        self.resetActiveSelectionAction = QtWidgets.QAction('Reset Active Selection', parent=self.debugMenu)
+        self.resetActiveSelectionAction.setObjectName('resetActiveSelectionAction')
+        self.resetActiveSelectionAction.setCheckable(True)
+
+        self.debugMenu.addAction(self.resetActiveSelectionAction)
+
+        # Add help menu actions
+        #
+        self.usingEzSkinBlenderAction = QtWidgets.QAction("Using Ez Skin Blender", parent=self.helpMenu)
+        self.usingEzSkinBlenderAction.setObjectName('usingEzSkinBlenderAction')
+        self.usingEzSkinBlenderAction.triggered.connect(self.on_usingEzSkinBlenderAction_triggered)
+
+        self.helpMenu.addAction(self.usingEzSkinBlenderAction)
 
         # Initialize influence item model
         #
@@ -1096,9 +1216,9 @@ class QEzSkinBlender(quicwindow.QUicWindow):
             log.info('Operation aborted...')
 
     @QtCore.Slot(bool)
-    def on_resetBindPreMatricesAction_triggered(self, checked=False):
+    def on_resetPreBindMatricesAction_triggered(self, checked=False):
         """
-        Slot method for the resetBindPreMatricesAction's `triggered` signal.
+        Slot method for the resetPreBindMatricesAction's `triggered` signal.
 
         :type checked: bool
         :rtype: None
@@ -1109,7 +1229,7 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         reply = QtWidgets.QMessageBox.question(
             self,
             'Reset Influences',
-            'Are you sure you want to reset the bind-pre matrices?',
+            'Are you sure you want to reset the pre-bind matrices?',
             QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
             QtWidgets.QMessageBox.No
         )

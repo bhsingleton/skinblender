@@ -1370,8 +1370,6 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
     <property name="title">
      <string>&amp;File</string>
     </property>
-    <addaction name="saveWeightsAction"/>
-    <addaction name="loadWeightsAction"/>
    </widget>
    <widget class="QMenu" name="editMenu">
     <property name="tearOffEnabled">
@@ -1381,19 +1379,9 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
      <string>&amp;Edit</string>
     </property>
     <addaction name="separator"/>
-    <addaction name="copyWeightsAction"/>
-    <addaction name="pasteWeightsAction"/>
-    <addaction name="pasteAverageWeightsAction"/>
     <addaction name="separator"/>
-    <addaction name="copySkinAction"/>
-    <addaction name="pasteSkinAction"/>
     <addaction name="separator"/>
-    <addaction name="blendVerticesAction"/>
-    <addaction name="blendBetweenVerticesAction"/>
-    <addaction name="blendByDistanceAction"/>
     <addaction name="separator"/>
-    <addaction name="resetIntermediateObjectAction"/>
-    <addaction name="resetBindPreMatricesAction"/>
    </widget>
    <widget class="QMenu" name="settingsMenu">
     <property name="tearOffEnabled">
@@ -1403,11 +1391,7 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
      <string>&amp;Settings</string>
     </property>
     <addaction name="separator"/>
-    <addaction name="xAction"/>
-    <addaction name="yAction"/>
-    <addaction name="zAction"/>
     <addaction name="separator"/>
-    <addaction name="setMirrorToleranceAction"/>
    </widget>
    <widget class="QMenu" name="debugMenu">
     <property name="tearOffEnabled">
@@ -1416,7 +1400,6 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
     <property name="title">
      <string>&amp;Debug</string>
     </property>
-    <addaction name="resetActiveSelectionAction"/>
    </widget>
    <widget class="QMenu" name="helpMenu">
     <property name="tearOffEnabled">
@@ -1425,7 +1408,6 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
     <property name="title">
      <string>&amp;Help</string>
     </property>
-    <addaction name="usingEzSkinBlenderAction"/>
    </widget>
    <addaction name="fileMenu"/>
    <addaction name="editMenu"/>
@@ -1433,136 +1415,7 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
    <addaction name="debugMenu"/>
    <addaction name="helpMenu"/>
   </widget>
-  <action name="saveWeightsAction">
-   <property name="text">
-    <string>&amp;Save Weights</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+S</string>
-   </property>
-  </action>
-  <action name="loadWeightsAction">
-   <property name="text">
-    <string>&amp;Load Weights</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+O</string>
-   </property>
-  </action>
-  <action name="usingEzSkinBlenderAction">
-   <property name="text">
-    <string>&amp;Using Ez Skin Blender</string>
-   </property>
-  </action>
-  <action name="resetActiveSelectionAction">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>&amp;Reset Active Selection</string>
-   </property>
-  </action>
-  <action name="copyWeightsAction">
-   <property name="text">
-    <string>&amp;Copy Weights</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+C</string>
-   </property>
-  </action>
-  <action name="pasteWeightsAction">
-   <property name="text">
-    <string>&amp;Paste Weights</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+V</string>
-   </property>
-  </action>
-  <action name="pasteAverageWeightsAction">
-   <property name="text">
-    <string>&amp;Paste Average Weights</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+Shift+V</string>
-   </property>
-  </action>
-  <action name="blendVerticesAction">
-   <property name="text">
-    <string>&amp;Blend Vertices</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+B</string>
-   </property>
-  </action>
-  <action name="blendBetweenVerticesAction">
-   <property name="text">
-    <string>&amp;Blend Between Vertices</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+Shift+B</string>
-   </property>
-  </action>
-  <action name="blendByDistanceAction">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>&amp;Blend By Distance</string>
-   </property>
-  </action>
-  <action name="resetIntermediateObjectAction">
-   <property name="text">
-    <string>&amp;Reset Intermediate Object</string>
-   </property>
-  </action>
-  <action name="resetBindPreMatricesAction">
-   <property name="text">
-    <string>&amp;Reset Pre-Bind Matrices</string>
-   </property>
-  </action>
-  <action name="setMirrorToleranceAction">
-   <property name="text">
-    <string>&amp;Set Mirror Tolerance</string>
-   </property>
-  </action>
-  <action name="copySkinAction">
-   <property name="text">
-    <string>Copy Skin</string>
-   </property>
-  </action>
-  <action name="pasteSkinAction">
-   <property name="text">
-    <string>Paste Skin</string>
-   </property>
-  </action>
   <actiongroup name="mirrorAxisActionGroup">
-   <action name="xAction">
-    <property name="checkable">
-     <bool>true</bool>
-    </property>
-    <property name="checked">
-     <bool>true</bool>
-    </property>
-    <property name="text">
-     <string>X</string>
-    </property>
-   </action>
-   <action name="yAction">
-    <property name="checkable">
-     <bool>true</bool>
-    </property>
-    <property name="text">
-     <string>Y</string>
-    </property>
-   </action>
-   <action name="zAction">
-    <property name="checkable">
-     <bool>true</bool>
-    </property>
-    <property name="text">
-     <string>Z</string>
-    </property>
-   </action>
    <property name="exclusive" stdset="0">
     <bool>true</bool>
    </property>
@@ -1570,14 +1423,14 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
  </widget>
  <customwidgets>
   <customwidget>
-   <class>QInfluenceView</class>
-   <extends>QTableView</extends>
-   <header>ezskinblender/ui/views/qinfluenceview.h</header>
-  </customwidget>
-  <customwidget>
    <class>QDropDownButton</class>
    <extends>QToolButton</extends>
    <header>dcc/ui/qdropdownbutton.h</header>
+  </customwidget>
+  <customwidget>
+   <class>QInfluenceView</class>
+   <extends>QTableView</extends>
+   <header>ezskinblender/ui/views/qinfluenceview.h</header>
   </customwidget>
  </customwidgets>
  <resources>
@@ -1618,17 +1471,17 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
   </connection>
  </connections>
  <buttongroups>
+  <buttongroup name="incrementWeightButtonGroup"/>
+  <buttongroup name="scaleWeightButtonGroup">
+   <property name="exclusive">
+    <bool>true</bool>
+   </property>
+  </buttongroup>
   <buttongroup name="weightPresetButtonGroup">
    <property name="exclusive">
     <bool>true</bool>
    </property>
   </buttongroup>
   <buttongroup name="mirrorWeightButtonGroup"/>
-  <buttongroup name="scaleWeightButtonGroup">
-   <property name="exclusive">
-    <bool>true</bool>
-   </property>
-  </buttongroup>
-  <buttongroup name="incrementWeightButtonGroup"/>
  </buttongroups>
 </ui>

@@ -17,7 +17,7 @@
    </size>
   </property>
   <property name="windowTitle">
-   <string>|| Ez Skin Blender</string>
+   <string>|| Ez'Skin-Blender</string>
   </property>
   <widget class="QWidget" name="mainWidget">
    <layout class="QVBoxLayout" name="verticalLayout">
@@ -406,9 +406,9 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
             </widget>
            </item>
            <item>
-            <widget class="QWidget" name="modeWidget" native="true">
+            <widget class="QPushButton" name="precisionPushButton">
              <property name="sizePolicy">
-              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+              <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                <horstretch>0</horstretch>
                <verstretch>0</verstretch>
               </sizepolicy>
@@ -425,46 +425,16 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
                <height>20</height>
               </size>
              </property>
-             <layout class="QHBoxLayout" name="weightOptionInteropLayout">
-              <property name="leftMargin">
-               <number>0</number>
-              </property>
-              <property name="topMargin">
-               <number>0</number>
-              </property>
-              <property name="rightMargin">
-               <number>0</number>
-              </property>
-              <property name="bottomMargin">
-               <number>0</number>
-              </property>
-              <item>
-               <widget class="QCheckBox" name="precisionCheckBox">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="text">
-                 <string>Precision Mode</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QCheckBox" name="selectShellCheckBox">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="text">
-                 <string>Select Shell</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
+             <property name="styleSheet">
+              <string notr="true">QPushButton:checked { background-color: firebrick; border: none; }
+QPushButton:hover:checked { background-color: crimson; }</string>
+             </property>
+             <property name="text">
+              <string>Precision</string>
+             </property>
+             <property name="checkable">
+              <bool>true</bool>
+             </property>
             </widget>
            </item>
            <item>
@@ -681,22 +651,10 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
                  <item>
                   <widget class="QPushButton" name="weightPresetPushButton1">
                    <property name="sizePolicy">
-                    <sizepolicy hsizetype="Ignored" vsizetype="Fixed">
+                    <sizepolicy hsizetype="Ignored" vsizetype="Preferred">
                      <horstretch>0</horstretch>
                      <verstretch>0</verstretch>
                     </sizepolicy>
-                   </property>
-                   <property name="minimumSize">
-                    <size>
-                     <width>0</width>
-                     <height>20</height>
-                    </size>
-                   </property>
-                   <property name="maximumSize">
-                    <size>
-                     <width>16777215</width>
-                     <height>20</height>
-                    </size>
                    </property>
                    <property name="whatsThis">
                     <string>0.0</string>
@@ -712,22 +670,10 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
                  <item>
                   <widget class="QPushButton" name="weightPresetPushButton2">
                    <property name="sizePolicy">
-                    <sizepolicy hsizetype="Ignored" vsizetype="Fixed">
+                    <sizepolicy hsizetype="Ignored" vsizetype="Preferred">
                      <horstretch>0</horstretch>
                      <verstretch>0</verstretch>
                     </sizepolicy>
-                   </property>
-                   <property name="minimumSize">
-                    <size>
-                     <width>0</width>
-                     <height>20</height>
-                    </size>
-                   </property>
-                   <property name="maximumSize">
-                    <size>
-                     <width>16777215</width>
-                     <height>20</height>
-                    </size>
                    </property>
                    <property name="whatsThis">
                     <string>0.1</string>
@@ -743,22 +689,10 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
                  <item>
                   <widget class="QPushButton" name="weightPresetPushButton3">
                    <property name="sizePolicy">
-                    <sizepolicy hsizetype="Ignored" vsizetype="Fixed">
+                    <sizepolicy hsizetype="Ignored" vsizetype="Preferred">
                      <horstretch>0</horstretch>
                      <verstretch>0</verstretch>
                     </sizepolicy>
-                   </property>
-                   <property name="minimumSize">
-                    <size>
-                     <width>0</width>
-                     <height>20</height>
-                    </size>
-                   </property>
-                   <property name="maximumSize">
-                    <size>
-                     <width>16777215</width>
-                     <height>20</height>
-                    </size>
                    </property>
                    <property name="whatsThis">
                     <string>0.25</string>
@@ -774,22 +708,10 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
                  <item>
                   <widget class="QPushButton" name="weightPresetPushButton4">
                    <property name="sizePolicy">
-                    <sizepolicy hsizetype="Ignored" vsizetype="Fixed">
+                    <sizepolicy hsizetype="Ignored" vsizetype="Preferred">
                      <horstretch>0</horstretch>
                      <verstretch>0</verstretch>
                     </sizepolicy>
-                   </property>
-                   <property name="minimumSize">
-                    <size>
-                     <width>0</width>
-                     <height>20</height>
-                    </size>
-                   </property>
-                   <property name="maximumSize">
-                    <size>
-                     <width>16777215</width>
-                     <height>20</height>
-                    </size>
                    </property>
                    <property name="whatsThis">
                     <string>0.5</string>
@@ -805,22 +727,10 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
                  <item>
                   <widget class="QPushButton" name="weightPresetPushButton5">
                    <property name="sizePolicy">
-                    <sizepolicy hsizetype="Ignored" vsizetype="Fixed">
+                    <sizepolicy hsizetype="Ignored" vsizetype="Preferred">
                      <horstretch>0</horstretch>
                      <verstretch>0</verstretch>
                     </sizepolicy>
-                   </property>
-                   <property name="minimumSize">
-                    <size>
-                     <width>0</width>
-                     <height>20</height>
-                    </size>
-                   </property>
-                   <property name="maximumSize">
-                    <size>
-                     <width>16777215</width>
-                     <height>20</height>
-                    </size>
                    </property>
                    <property name="whatsThis">
                     <string>0.75</string>
@@ -836,22 +746,10 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
                  <item>
                   <widget class="QPushButton" name="weightPresetPushButton6">
                    <property name="sizePolicy">
-                    <sizepolicy hsizetype="Ignored" vsizetype="Fixed">
+                    <sizepolicy hsizetype="Ignored" vsizetype="Preferred">
                      <horstretch>0</horstretch>
                      <verstretch>0</verstretch>
                     </sizepolicy>
-                   </property>
-                   <property name="minimumSize">
-                    <size>
-                     <width>0</width>
-                     <height>20</height>
-                    </size>
-                   </property>
-                   <property name="maximumSize">
-                    <size>
-                     <width>16777215</width>
-                     <height>20</height>
-                    </size>
                    </property>
                    <property name="whatsThis">
                     <string>0.9</string>
@@ -867,22 +765,10 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
                  <item>
                   <widget class="QPushButton" name="weightPresetPushButton7">
                    <property name="sizePolicy">
-                    <sizepolicy hsizetype="Ignored" vsizetype="Fixed">
+                    <sizepolicy hsizetype="Ignored" vsizetype="Preferred">
                      <horstretch>0</horstretch>
                      <verstretch>0</verstretch>
                     </sizepolicy>
-                   </property>
-                   <property name="minimumSize">
-                    <size>
-                     <width>0</width>
-                     <height>20</height>
-                    </size>
-                   </property>
-                   <property name="maximumSize">
-                    <size>
-                     <width>16777215</width>
-                     <height>20</height>
-                    </size>
                    </property>
                    <property name="whatsThis">
                     <string>1.0</string>
@@ -892,6 +778,140 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
                    </property>
                    <attribute name="buttonGroup">
                     <string notr="true">weightPresetButtonGroup</string>
+                   </attribute>
+                  </widget>
+                 </item>
+                </layout>
+               </widget>
+              </item>
+              <item>
+               <widget class="QWidget" name="percentPresetWidget" native="true">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="minimumSize">
+                 <size>
+                  <width>0</width>
+                  <height>20</height>
+                 </size>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>16777215</width>
+                  <height>20</height>
+                 </size>
+                </property>
+                <layout class="QHBoxLayout" name="horizontalLayout">
+                 <property name="spacing">
+                  <number>0</number>
+                 </property>
+                 <property name="leftMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="topMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="rightMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="bottomMargin">
+                  <number>0</number>
+                 </property>
+                 <item>
+                  <widget class="QPushButton" name="percentPresetPushButton1">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Ignored" vsizetype="Preferred">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="whatsThis">
+                    <string>0.1</string>
+                   </property>
+                   <property name="text">
+                    <string>10%</string>
+                   </property>
+                   <attribute name="buttonGroup">
+                    <string notr="true">percentPresetButtonGroup</string>
+                   </attribute>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QPushButton" name="percentPresetPushButton2">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Ignored" vsizetype="Preferred">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="whatsThis">
+                    <string>0.25</string>
+                   </property>
+                   <property name="text">
+                    <string>25%</string>
+                   </property>
+                   <attribute name="buttonGroup">
+                    <string notr="true">percentPresetButtonGroup</string>
+                   </attribute>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QPushButton" name="percentPresetPushButton3">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Ignored" vsizetype="Preferred">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="whatsThis">
+                    <string>0.5</string>
+                   </property>
+                   <property name="text">
+                    <string>50%</string>
+                   </property>
+                   <attribute name="buttonGroup">
+                    <string notr="true">percentPresetButtonGroup</string>
+                   </attribute>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QPushButton" name="percentPresetPushButton4">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Ignored" vsizetype="Preferred">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="whatsThis">
+                    <string>0.75</string>
+                   </property>
+                   <property name="text">
+                    <string>75%</string>
+                   </property>
+                   <attribute name="buttonGroup">
+                    <string notr="true">percentPresetButtonGroup</string>
+                   </attribute>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QPushButton" name="percentPresetPushButton5">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Ignored" vsizetype="Preferred">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                   <property name="whatsThis">
+                    <string>1.0</string>
+                   </property>
+                   <property name="text">
+                    <string>100%</string>
+                   </property>
+                   <attribute name="buttonGroup">
+                    <string notr="true">percentPresetButtonGroup</string>
                    </attribute>
                   </widget>
                  </item>
@@ -1378,10 +1398,6 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
     <property name="title">
      <string>&amp;Edit</string>
     </property>
-    <addaction name="separator"/>
-    <addaction name="separator"/>
-    <addaction name="separator"/>
-    <addaction name="separator"/>
    </widget>
    <widget class="QMenu" name="settingsMenu">
     <property name="tearOffEnabled">
@@ -1390,8 +1406,6 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
     <property name="title">
      <string>&amp;Settings</string>
     </property>
-    <addaction name="separator"/>
-    <addaction name="separator"/>
    </widget>
    <widget class="QMenu" name="debugMenu">
     <property name="tearOffEnabled">
@@ -1471,17 +1485,18 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
   </connection>
  </connections>
  <buttongroups>
-  <buttongroup name="incrementWeightButtonGroup"/>
-  <buttongroup name="scaleWeightButtonGroup">
-   <property name="exclusive">
-    <bool>true</bool>
-   </property>
-  </buttongroup>
   <buttongroup name="weightPresetButtonGroup">
    <property name="exclusive">
     <bool>true</bool>
    </property>
   </buttongroup>
+  <buttongroup name="scaleWeightButtonGroup">
+   <property name="exclusive">
+    <bool>true</bool>
+   </property>
+  </buttongroup>
   <buttongroup name="mirrorWeightButtonGroup"/>
+  <buttongroup name="incrementWeightButtonGroup"/>
+  <buttongroup name="percentPresetButtonGroup"/>
  </buttongroups>
 </ui>

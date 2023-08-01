@@ -14,6 +14,7 @@ class QInfluenceView(QtWidgets.QTableView):
 
     # region Signals
     synchronized = QtCore.Signal()
+    highlighted = QtCore.Signal(QtCore.QItemSelection)
     # endregion
 
     # region Dunderscores
@@ -145,14 +146,34 @@ class QInfluenceView(QtWidgets.QTableView):
         :rtype: None
         """
 
-        if self.hasBuddy():
+        # Check if buddy exists
+        #
+        if not self.hasBuddy():
 
-            self.beginSelectionUpdate()
-            self.buddy().selectRows(self._selectedRows)
-            self.endSelectionUpdate()
+            log.debug(f'Cannot locate buddy from "{self.objectName()}" item view!')
+            return
 
-            self.invalidateFilters()
-            self.synchronized.emit()
+        # Check if synchronization is already in progress
+        #
+        if self.isPending() or self.isBuddyPending():
+
+            log.debug('Item views are already synchronizing!')
+            return
+
+        # Synchronize buddy
+        #
+        self.beginSelectionUpdate()
+        self.buddy().selectRows(self.selectedRows())
+        self.endSelectionUpdate()
+
+        # Invalidate any item filters
+        #
+        self.invalidateFilters()
+
+        # Emit synchronized signals
+        #
+        self.synchronized.emit()
+        self.buddy().synchronized.emit()
 
     def invalidateFilters(self):
         """
@@ -212,19 +233,10 @@ class QInfluenceView(QtWidgets.QTableView):
         """
         Returns the selected rows.
 
-        :rtype: list[int]
+        :rtype: List[int]
         """
 
-        selectedRows = self.selectionModel().selectedRows()
-        model = self.model()
-
-        if isinstance(model, QtCore.QAbstractProxyModel):
-
-            return list(set([model.mapToSource(x).row() for x in selectedRows]))
-
-        else:
-
-            return list(set([x.row() for x in selectedRows]))
+        return self._selectedRows
 
     def selectRow(self, row):
         """
@@ -240,7 +252,7 @@ class QInfluenceView(QtWidgets.QTableView):
         """
         Selects the supplied rows.
 
-        :type rows: list[int]
+        :type rows: List[int]
         :rtype: None
         """
 
@@ -338,30 +350,19 @@ class QInfluenceView(QtWidgets.QTableView):
         #
         super(QInfluenceView, self).selectionChanged(selected, deselected)
 
-        # Update internal selection tracker
-        # Be aware that QItemSelection stores both row and column indices!
+        # Cache selection changes
         #
-        selectedRows, deselectedRows = None, None
+        selection = self.selectionModel().selection()
         model = self.model()
 
-        if isinstance(model, QtCore.QAbstractProxyModel):
+        if isinstance(model, QtCore.QSortFilterProxyModel):
 
-            selectedRows = [model.mapToSource(x).row() for x in selected.indexes() if model.mapToSource(x).column() == 0]
-            deselectedRows = [model.mapToSource(x).row() for x in deselected.indexes() if model.mapToSource(x).column() == 0]
+            selection = model.mapSelectionToSource(selection)
 
-        else:
+        self._selectedRows = list({index.row() for index in selection.indexes()})
+        log.debug(f'"{self.objectName()}" selection changed: {self._selectedRows}')
 
-            selectedRows = [x.row() for x in selected.indexes() if x.column() == 0]
-            deselectedRows = [x.row() for x in deselected.indexes() if x.column() == 0]
-
-        # Update internal selection tracker
+        # Emit highlighted signal
         #
-        self._selectedRows = list(set(self._selectedRows).difference(deselectedRows).union(selectedRows))
-
-        # Force the sibling to match selections
-        # Be sure to check if a sync is pending to avoid cycle checks!
-        #
-        if self.autoSelect() and (self.hasBuddy() and not self.isBuddyPending()):
-
-            self.synchronize()
+        self.highlighted.emit(selection)
     # endregion

@@ -33,7 +33,7 @@ def exportSkin(filePath, skin):
 
     with open(filePath, 'w') as jsonFile:
 
-        log.info('Exporting skin weights to: %s' % filePath)
+        log.info(f'Exporting skin weights to: {filePath}')
         json.dump(skinWeights, jsonFile, cls=psonparser.PSONEncoder, indent=4)
 
 
@@ -47,4 +47,5 @@ def importSkin(filePath):
 
     with open(filePath, 'r') as jsonFile:
 
+        log.debug(f'Importing skin weights from: {filePath}')
         return json.load(jsonFile, cls=psonparser.PSONDecoder)

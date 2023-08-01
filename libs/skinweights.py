@@ -229,11 +229,12 @@ class SkinWeights(psonobject.PSONObject):
         """
         Applies the closest skin weights to the supplied skin.
 
-        :type mesh: fnmesh.FnMesh
+        :type mesh: Union[om.MObject, pymxs.MXSWrapperBase]
         :rtype: None
         """
 
         skin = fnskin.FnSkin.create(mesh)
+        skin.setMaxInfluences(self.maxInfluences)
         skin.addInfluence(*list(self.influences.values()))
 
         self.applyClosestWeights(skin)

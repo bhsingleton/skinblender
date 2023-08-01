@@ -128,6 +128,7 @@ class QEditInfluencesDialog(quicdialog.QUicDialog):
         self.influenceItemFilterModel = QtCore.QSortFilterProxyModel(parent=self.influenceTreeView)
         self.influenceItemFilterModel.setObjectName('influenceItemFilterModel')
         self.influenceItemFilterModel.setSourceModel(self.influenceItemModel)
+        self.influenceItemFilterModel.setRecursiveFilteringEnabled(True)
 
         # Assign filter model to tree view
         #
@@ -163,7 +164,7 @@ class QEditInfluencesDialog(quicdialog.QUicDialog):
         #
         isValid = self.isValidInfluence(influence)
         icon = QtGui.QIcon(':dcc/icons/yes.png') if isValid else QtGui.QIcon(':dcc/icons/no.png')
-        name = influence.name()
+        name = influence.absoluteName()
 
         item = QtGui.QStandardItem(icon, name)
         parentItem.appendRow(item)
@@ -235,28 +236,18 @@ class QEditInfluencesDialog(quicdialog.QUicDialog):
         # Get selected items
         #
         selectedIndices = self.influenceTreeView.selectedIndexes()
-        influences = []
+        numSelectedIndices = len(selectedIndices)
 
-        for index in selectedIndices:
+        influences = [None] * numSelectedIndices
 
-            # Get item from index
+        for (i, index) in enumerate(selectedIndices):
+
+            # Get associated item
             #
-            itemIndex = self.influenceItemFilterModel.mapToSource(index)
-            item = self.influenceItemModel.itemFromIndex(itemIndex)
+            index = self.influenceItemFilterModel.mapToSource(index)
+            item = self.influenceItemModel.itemFromIndex(index)
 
-            # Check if item is valid
-            #
-            influenceName = item.text()
-            isValid = self.isValidInfluence(influenceName)
-
-            if isValid:
-
-                influence = fnnode.FnNode.getNodeByName(influenceName)
-                influences.append(influence)
-
-            else:
-
-                log.warning('Unable to add %s influence!' % influenceName)
+            influences[i] = item.text()
 
         return influences
 
@@ -358,10 +349,6 @@ class QAddInfluencesDialog(QEditInfluencesDialog):
         :rtype: None
         """
 
-        # Call parent method
-        #
-        super(QAddInfluencesDialog, self).accept()
-
         # Check how many influences were selected
         #
         selectedInfluences = self.selectedInfluences()
@@ -369,11 +356,16 @@ class QAddInfluencesDialog(QEditInfluencesDialog):
 
         if numSelected > 0:
 
+            log.debug(f'Adding influences: {selectedInfluences}')
             self.skin.addInfluence(*selectedInfluences)
 
         else:
 
             log.warning('No influences selected to add!')
+
+        # Call parent method
+        #
+        super(QAddInfluencesDialog, self).accept()
     # endregion
 
 
@@ -418,10 +410,6 @@ class QRemoveInfluencesDialog(QEditInfluencesDialog):
         :rtype: None
         """
 
-        # Call parent method
-        #
-        super(QRemoveInfluencesDialog, self).accept()
-
         # Check how many influences were selected
         #
         selectedInfluences = self.selectedInfluences()
@@ -429,11 +417,16 @@ class QRemoveInfluencesDialog(QEditInfluencesDialog):
 
         if numSelected > 0:
 
+            log.debug(f'Removing influences: {selectedInfluences}')
             self.skin.removeInfluence(*selectedInfluences)
 
         else:
 
             log.warning('No influences selected to add!')
+
+        # Call parent method
+        #
+        super(QRemoveInfluencesDialog, self).accept()
     # endregion
 
 

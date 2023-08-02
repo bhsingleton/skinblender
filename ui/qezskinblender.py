@@ -116,6 +116,7 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         self.pasteAverageWeightsAction = None
         self.copySkinAction = None
         self.pasteSkinAction = None
+        self.relaxVerticesAction = None
         self.blendVerticesAction = None
         self.blendBetweenVerticesAction = None
         self.blendByDistanceAction = None
@@ -165,7 +166,7 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         self.optionsWidget = None
         self.mirrorWidget = None
         self.mirrorPushButton = None
-        self.pullPushButton = None
+        self.pruneDropDownButton = None
         self.slabDropDownButton = None
         self.weightPresetWidget = None
         self.weightPresetPushButton1 = None
@@ -199,6 +200,10 @@ class QEzSkinBlender(quicwindow.QUicWindow):
 
         self.weightTableMenu = None
         self.selectAffectedVerticesAction = None
+
+        self.pruneMenu = None
+        self.pruneSpinBox = None
+        self.pruneSpinBoxAction = None
 
         self.slabMenu = None
         self.closestPointAction = None
@@ -275,6 +280,27 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         actions[axis].setChecked(True)
 
     @property
+    def pruneTolerance(self):
+        """
+        Getter method that returns the prune tolerance.
+
+        :rtype: float
+        """
+
+        return self.pruneSpinBox.value()
+
+    @pruneTolerance.setter
+    def pruneTolerance(self, tolerance):
+        """
+        Setter method that updates the prune tolerance.
+
+        :type tolerance: float
+        :rtype: None
+        """
+
+        self.pruneSpinBox.setValue(tolerance)
+
+    @property
     def slabOption(self):
         """
         Getter method that returns the current slab option.
@@ -320,27 +346,6 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         """
 
         self.blendByDistanceAction.setChecked(blendByDistance)
-
-    @property
-    def selectShell(self):
-        """
-        Getter method that returns the `selectShell` flag.
-
-        :rtype: bool
-        """
-
-        return self.selectShellCheckBox.isChecked()
-
-    @selectShell.setter
-    def selectShell(self, selectShell):
-        """
-        Setter method that updates the `selectShell` flag.
-
-        :type selectShell: bool
-        :rtype: None
-        """
-
-        self.selectShellCheckBox.setChecked(selectShell)
 
     @property
     def mirrorTolerance(self):
@@ -486,6 +491,10 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         self.pasteSkinAction.setObjectName('pasteSkinAction')
         self.pasteSkinAction.triggered.connect(self.on_pasteSkinAction_triggered)
 
+        self.relaxVerticesAction = QtWidgets.QAction('Relax Vertices', parent=self.editMenu)
+        self.relaxVerticesAction.setObjectName('relaxVerticesAction')
+        self.relaxVerticesAction.triggered.connect(self.on_relaxVerticesAction_triggered)
+
         self.blendVerticesAction = QtWidgets.QAction('Blend Vertices', parent=self.editMenu)
         self.blendVerticesAction.setObjectName('blendVerticesAction')
         self.blendVerticesAction.triggered.connect(self.on_blendVerticesAction_triggered)
@@ -509,6 +518,8 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         self.editMenu.addActions([self.copyWeightsAction, self.pasteWeightsAction, self.pasteAverageWeightsAction])
         self.editMenu.addSeparator()
         self.editMenu.addActions([self.copySkinAction, self.pasteSkinAction])
+        self.editMenu.addSeparator()
+        self.editMenu.addAction(self.relaxVerticesAction)
         self.editMenu.addSeparator()
         self.editMenu.addActions([self.blendVerticesAction, self.blendBetweenVerticesAction, self.blendByDistanceAction])
         self.editMenu.addSeparator()
@@ -606,6 +617,28 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         self.influenceTable.setBuddy(self.weightTable)
         self.weightTable.setBuddy(self.influenceTable)
 
+        # Create prune button context menu
+        #
+        self.pruneMenu = QtWidgets.QMenu(parent=self.pruneDropDownButton)
+        self.pruneMenu.setObjectName('pruneMenu')
+
+        self.pruneSpinBox = QtWidgets.QDoubleSpinBox(parent=self.pruneMenu)
+        self.pruneSpinBox.setObjectName('pruneSpinBox')
+        self.pruneSpinBox.setAlignment(QtCore.Qt.AlignCenter)
+        self.pruneSpinBox.setDecimals(3)
+        self.pruneSpinBox.setMinimum(0.0)
+        self.pruneSpinBox.setMaximum(1.0)
+        self.pruneSpinBox.setValue(0.001)
+        self.pruneSpinBox.setSingleStep(0.001)
+
+        self.pruneSpinBoxAction = QtWidgets.QWidgetAction(self.pruneMenu)
+        self.pruneSpinBoxAction.setObjectName('pruneSpinBoxAction')
+        self.pruneSpinBoxAction.setDefaultWidget(self.pruneSpinBox)
+
+        self.pruneMenu.addAction(self.pruneSpinBoxAction)
+
+        self.pruneDropDownButton.setMenu(self.pruneMenu)
+
         # Create slab button context menu
         #
         self.slabMenu = QtWidgets.QMenu(parent=self.slabDropDownButton)
@@ -632,9 +665,6 @@ class QEzSkinBlender(quicwindow.QUicWindow):
 
         # Assign button group ids
         #
-        self.mirrorWeightButtonGroup.setId(self.mirrorPushButton, 0)
-        self.mirrorWeightButtonGroup.setId(self.pullPushButton, 1)
-
         self.weightPresetButtonGroup.setId(self.weightPresetPushButton1, 0)  # 0.0
         self.weightPresetButtonGroup.setId(self.weightPresetPushButton2, 1)  # 0.1
         self.weightPresetButtonGroup.setId(self.weightPresetPushButton3, 2)  # 0.25
@@ -669,9 +699,10 @@ class QEzSkinBlender(quicwindow.QUicWindow):
 
         # Save user settings
         #
+        settings.setValue('editor/blendByDistance', int(self.blendByDistance))
         settings.setValue('editor/mirrorAxis', self.mirrorAxis)
         settings.setValue('editor/mirrorTolerance', self.mirrorTolerance)
-        settings.setValue('editor/blendByDistance', int(self.blendByDistance))
+        settings.setValue('editor/pruneTolerance', self.pruneTolerance)
         settings.setValue('editor/slabOption', self.slabOption)
 
     def loadSettings(self, settings):
@@ -689,9 +720,10 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         # Load user settings
         #
         self.mirrorAxis = int(settings.value('editor/mirrorAxis', defaultValue=0))
-        self.blendByDistance = bool(settings.value('editor/blendByDistance', defaultValue=0))
-        self.slabOption = int(settings.value('editor/slabOption', defaultValue=0))
         self.mirrorTolerance = float(settings.value('editor/mirrorTolerance', defaultValue='1e-3'))
+        self.blendByDistance = bool(settings.value('editor/blendByDistance', defaultValue=0))
+        self.pruneTolerance = float(settings.value('editor/pruneTolerance', defaultValue='1e-2'))
+        self.slabOption = int(settings.value('editor/slabOption', defaultValue=0))
 
     def selection(self):
         """
@@ -884,9 +916,20 @@ class QEzSkinBlender(quicwindow.QUicWindow):
             log.warning('Invalid mesh selected!')
 
     @validate
+    def relaxVertices(self):
+        """
+        Relaxes the selected vertex weights.
+
+        :rtype: None
+        """
+
+        self.skin.relaxVertices(self.selection())
+        self.invalidateWeights()
+
+    @validate
     def blendVertices(self):
         """
-        Blends the active component selection.
+        Blends the selected vertex weights.
 
         :rtype: None
         """
@@ -897,7 +940,7 @@ class QEzSkinBlender(quicwindow.QUicWindow):
     @validate
     def blendBetweenVertices(self):
         """
-        Blends between the active selection pairs.
+        Blends between the selected vertex pairs.
 
         :rtype: None
         """
@@ -906,11 +949,24 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         self.invalidateWeights()
 
     @validate
-    def mirrorWeights(self, pull=False):
+    def pruneWeights(self, tolerance=1e-3):
+        """
+        Prunes any influences below the specified tolerance.
+
+        :type tolerance: float
+        :rtype: None
+        """
+
+        self.skin.pruneVertices(self.selection(), tolerance=tolerance)
+        self.invalidateWeights()
+
+    @validate
+    def mirrorWeights(self, pull=False, swap=False):
         """
         Mirrors the active component selection.
 
         :type pull: bool
+        :type swap: bool
         :rtype: None
         """
 
@@ -1408,6 +1464,17 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         self.pasteWeights()
 
     @QtCore.Slot(bool)
+    def on_pasteAverageWeightsAction_triggered(self, checked=False):
+        """
+        Slot method for the pasteAverageWeightsAction's `triggered` signal.
+
+        :type checked: bool
+        :rtype: None
+        """
+
+        self.pasteWeights(average=True)
+
+    @QtCore.Slot(bool)
     def on_copySkinAction_triggered(self, checked=False):
         """
         Slot method for the copySkinAction's `triggered` signal.
@@ -1430,15 +1497,15 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         self.pasteSkin()
 
     @QtCore.Slot(bool)
-    def on_pasteAverageWeightsAction_triggered(self, checked=False):
+    def on_relaxVerticesAction_triggered(self, checked=False):
         """
-        Slot method for the pasteAverageWeightsAction's `triggered` signal.
+        Slot method for the relaxVerticesAction's `triggered` signal.
 
         :type checked: bool
         :rtype: None
         """
 
-        self.pasteWeights(average=True)
+        self.relaxVertices()
 
     @QtCore.Slot(bool)
     def on_blendVerticesAction_triggered(self, checked=False):
@@ -1601,16 +1668,32 @@ class QEzSkinBlender(quicwindow.QUicWindow):
 
             return self.weightTableMenu.exec_(self.weightTable.mapToGlobal(point))
 
-    @QtCore.Slot(int)
-    def on_mirrorWeightButtonGroup_idClicked(self, index):
+    @QtCore.Slot(bool)
+    def on_mirrorPushButton_clicked(self, checked=False):
         """
-        Slot method for the mirrorWeightButtonGroup's `idClicked` signal.
+        Slot method for the mirrorPushButton's `clicked` signal.
 
-        :type index: int
+        :type checked: bool
         :rtype: None
         """
 
-        self.mirrorWeights(pull=bool(index))
+        modifiers = QtWidgets.QApplication.keyboardModifiers()
+        pull = modifiers == QtCore.Qt.ShiftModifier
+        swap = modifiers == QtCore.Qt.AltModifier
+
+        self.mirrorWeights(pull=pull, swap=swap)
+
+    @QtCore.Slot(bool)
+    def on_pruneDropDownButton_clicked(self, checked=False):
+        """
+        Slot method for the prunePushButton's `clicked` signal.
+
+        :type checked: bool
+        :rtype: None
+        """
+
+        tolerance = self.pruneSpinBox.value()
+        self.pruneWeights(tolerance=tolerance)
 
     @QtCore.Slot(bool)
     def on_slabDropDownButton_clicked(self, checked=False):

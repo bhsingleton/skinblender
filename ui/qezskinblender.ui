@@ -531,18 +531,15 @@ QPushButton:hover:checked { background-color: crimson; }</string>
                     </size>
                    </property>
                    <property name="toolTip">
-                    <string>Mirrors the selected vertices across the mesh.</string>
+                    <string>LMB mirrors the selected vertices. Shift + LMB pulls the weights from across the mesh. Alt + LMB mirrors the influences.</string>
                    </property>
                    <property name="text">
                     <string>Mirror</string>
                    </property>
-                   <attribute name="buttonGroup">
-                    <string notr="true">mirrorWeightButtonGroup</string>
-                   </attribute>
                   </widget>
                  </item>
                  <item>
-                  <widget class="QPushButton" name="pullPushButton">
+                  <widget class="QDropDownButton" name="pruneDropDownButton">
                    <property name="sizePolicy">
                     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                      <horstretch>0</horstretch>
@@ -565,11 +562,17 @@ QPushButton:hover:checked { background-color: crimson; }</string>
                     <string>Pulls weights from across the mesh onto the selected vertices.</string>
                    </property>
                    <property name="text">
-                    <string>Pull</string>
+                    <string>Prune</string>
                    </property>
-                   <attribute name="buttonGroup">
-                    <string notr="true">mirrorWeightButtonGroup</string>
-                   </attribute>
+                   <property name="popupMode">
+                    <enum>QToolButton::MenuButtonPopup</enum>
+                   </property>
+                   <property name="toolButtonStyle">
+                    <enum>Qt::ToolButtonTextOnly</enum>
+                   </property>
+                   <property name="arrowType">
+                    <enum>Qt::DownArrow</enum>
+                   </property>
                   </widget>
                  </item>
                  <item>
@@ -1485,6 +1488,8 @@ QPushButton:hover:checked { background-color: crimson; }</string>
   </connection>
  </connections>
  <buttongroups>
+  <buttongroup name="percentPresetButtonGroup"/>
+  <buttongroup name="incrementWeightButtonGroup"/>
   <buttongroup name="weightPresetButtonGroup">
    <property name="exclusive">
     <bool>true</bool>
@@ -1495,8 +1500,5 @@ QPushButton:hover:checked { background-color: crimson; }</string>
     <bool>true</bool>
    </property>
   </buttongroup>
-  <buttongroup name="mirrorWeightButtonGroup"/>
-  <buttongroup name="incrementWeightButtonGroup"/>
-  <buttongroup name="percentPresetButtonGroup"/>
  </buttongroups>
 </ui>

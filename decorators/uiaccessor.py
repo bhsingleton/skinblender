@@ -1,10 +1,12 @@
+from ..ui import qezskinblender
+
 import logging
 logging.basicConfig()
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
 
 
-def validate(func):
+def uiAccessor(func):
     """
     Returns a wrapper that validates functions against the UI before executing.
     This will help reduce the amount of conditions needed when we're not in edit mode.
@@ -17,16 +19,16 @@ def validate(func):
     #
     def wrapper(*args, **kwargs):
 
-        # Check if skin is still valid
+        # Check if window exists
         #
-        window = args[0]
+        window = qezskinblender.QEzSkinBlender.getInstance()
 
-        if window.skin.isValid():
+        if window is not None:
 
-            return func(*args, **kwargs)
+            return func(*args, window=window, **kwargs)
 
         else:
 
-            log.warning('Cannot manipulate vertex weights outside of envelope mode!')
+            log.warning("Cannot locate Ez'Skin-Blender window!")
 
     return wrapper

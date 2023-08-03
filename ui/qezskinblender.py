@@ -855,6 +855,102 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         self.skin.slabPasteWeights(self.selection(), mode=self.slabOption)
         self.invalidateWeights()
 
+    @validate
+    def setWeights(self, amount):
+        """
+        Sets the selected vertex weights.
+
+        :type amount: float
+        :rtype: None
+        """
+
+        # Iterate through selection
+        #
+        currentInfluence = self.currentInfluence()
+        sourceInfluences = self.sourceInfluences()
+        vertexWeights = self.vertexWeights()
+
+        updates = {}
+
+        for (vertexIndex, falloff) in self._softSelection.items():
+
+            updates[vertexIndex] = self.skin.setWeights(
+                vertexWeights[vertexIndex],
+                currentInfluence,
+                sourceInfluences,
+                amount,
+                falloff=falloff
+            )
+
+        # Assign updates to skin
+        #
+        self.skin.applyVertexWeights(updates)
+        self.invalidateWeights()
+
+    @validate
+    def incrementWeights(self, amount):
+        """
+        Increments the selected vertex weights.
+
+        :type amount: float
+        :rtype: None
+        """
+
+        # Iterate through selection
+        #
+        currentInfluence = self.currentInfluence()
+        sourceInfluences = self.sourceInfluences()
+        vertexWeights = self.vertexWeights()
+
+        updates = {}
+
+        for (vertexIndex, falloff) in self._softSelection.items():
+
+            updates[vertexIndex] = self.skin.incrementWeights(
+                vertexWeights[vertexIndex],
+                currentInfluence,
+                sourceInfluences,
+                amount,
+                falloff=falloff
+            )
+
+        # Assign updates to skin
+        #
+        self.skin.applyVertexWeights(updates)
+        self.invalidateWeights()
+
+    @validate
+    def scaleWeights(self, amount):
+        """
+        Scales the selected vertex weights.
+
+        :type amount: float
+        :rtype: None
+        """
+
+        # Iterate through selection
+        #
+        currentInfluence = self.currentInfluence()
+        sourceInfluences = self.sourceInfluences()
+        vertexWeights = self.vertexWeights()
+
+        updates = {}
+
+        for (vertexIndex, falloff) in self._softSelection.items():
+
+            updates[vertexIndex] = self.skin.scaleWeights(
+                vertexWeights[vertexIndex],
+                currentInfluence,
+                sourceInfluences,
+                amount,
+                falloff=falloff
+            )
+
+        # Assign updates to skin
+        #
+        self.skin.applyVertexWeights(updates)
+        self.invalidateWeights()
+
     def copySkin(self):
         """
         Copies the skin from the selected mesh.
@@ -1715,28 +1811,8 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         :rtype: None
         """
 
-        # Iterate through selection
-        #
-        currentInfluence = self.currentInfluence()
-        sourceInfluences = self.sourceInfluences()
-        vertexWeights = self.vertexWeights()
-
-        updates = {}
-
-        for (vertexIndex, falloff) in self._softSelection.items():
-
-            updates[vertexIndex] = self.skin.setWeights(
-                vertexWeights[vertexIndex],
-                currentInfluence,
-                sourceInfluences,
-                self.__weight_presets__[index],
-                falloff=falloff
-            )
-
-        # Assign updates to skin
-        #
-        self.skin.applyVertexWeights(updates)
-        self.invalidateWeights()
+        amount = self.__weight_presets__[index]
+        self.setWeights(amount)
 
     @QtCore.Slot(int)
     def on_percentPresetButtonGroup_idClicked(self, index):
@@ -1779,35 +1855,8 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         :rtype: None
         """
 
-        # Check if skin is valid
-        #
-        if not self.skin.isValid():
-
-            return
-
-        # Iterate through selection
-        #
-        currentInfluence = self.currentInfluence()
-        sourceInfluences = self.sourceInfluences()
         amount = self.setWeightSpinBox.value()
-        vertexWeights = self.vertexWeights()
-
-        updates = {}
-
-        for (vertexIndex, falloff) in self._softSelection.items():
-
-            updates[vertexIndex] = self.skin.setWeights(
-                vertexWeights[vertexIndex],
-                currentInfluence,
-                sourceInfluences,
-                amount,
-                falloff=falloff
-            )
-
-        # Assign updates to skin
-        #
-        self.skin.applyVertexWeights(updates)
-        self.invalidateWeights()
+        self.setWeights(amount)
 
     @QtCore.Slot(int)
     def on_incrementWeightButtonGroup_idClicked(self, index):
@@ -1818,35 +1867,8 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         :rtype: None
         """
 
-        # Check if skin is valid
-        #
-        if not self.skin.isValid():
-
-            return
-
-        # Iterate through selection
-        #
-        currentInfluence = self.currentInfluence()
-        sourceInfluences = self.sourceInfluences()
         amount = self.incrementWeightSpinBox.value() * self.__sign__[index]
-        vertexWeights = self.vertexWeights()
-
-        updates = {}
-
-        for (vertexIndex, falloff) in self._softSelection.items():
-
-            updates[vertexIndex] = self.skin.incrementWeights(
-                vertexWeights[vertexIndex],
-                currentInfluence,
-                sourceInfluences,
-                amount,
-                falloff=falloff
-            )
-
-        # Assign updates to skin
-        #
-        self.skin.applyVertexWeights(updates)
-        self.invalidateWeights()
+        self.incrementWeights(amount)
 
     @QtCore.Slot(int)
     def on_scaleWeightButtonGroup_idClicked(self, index):
@@ -1857,35 +1879,8 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         :rtype: None
         """
 
-        # Check if skin is valid
-        #
-        if not self.skin.isValid():
-
-            return
-
-        # Iterate through selection
-        #
-        currentInfluence = self.currentInfluence()
-        sourceInfluences = self.sourceInfluences()
         percent = self.scaleWeightSpinBox.value() * self.__sign__[index]
-        vertexWeights = self.vertexWeights()
-
-        updates = {}
-
-        for (vertexIndex, falloff) in self._softSelection.items():
-
-            updates[vertexIndex] = self.skin.scaleWeights(
-                vertexWeights[vertexIndex],
-                currentInfluence,
-                sourceInfluences,
-                percent,
-                falloff=falloff
-            )
-
-        # Assign updates to skin
-        #
-        self.skin.applyVertexWeights(updates)
-        self.invalidateWeights()
+        self.scaleWeights(percent)
 
     @QtCore.Slot(bool)
     def on_precisionPushButton_toggled(self, checked=False):

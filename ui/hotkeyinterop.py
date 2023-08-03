@@ -1,4 +1,6 @@
+from Qt import QtCore
 from . import qezskinblender
+from ..decorators.uiaccessor import uiAccessor
 
 import logging
 logging.basicConfig()
@@ -6,92 +8,131 @@ log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
 
 
-def togglePrecision():
+def showWindow():
+    """
+    Shows the main window.
+
+    :rtype: None
+    """
+
+    hasInstance = qezskinblender.QEzSkinBlender.hasInstance()
+
+    if not hasInstance:
+
+        window = qezskinblender.QEzSkinBlender()
+        window.show()
+
+    else:
+
+        window = qezskinblender.QEzSkinBlender.getInstance()
+        window.setFocus(QtCore.Qt.ActiveWindowFocusReason)
+
+
+@uiAccessor
+def togglePrecision(window=None):
     """
     Toggles precision mode on the main window.
 
+    :type window: qezskinblender.QEzSkinBlender
     :rtype: None
     """
 
-    instance = qezskinblender.QEzSkinBlender.getInstance()
-
-    if instance is not None:
-
-        instance.precision = not instance.precision
-
-    else:
-
-        log.warning("Cannot locate Ez'Skin-Blender window!")
+    window.precision = not window.precision
 
 
-def copyWeights():
+@uiAccessor
+def copyWeights(window=None):
     """
     Calls the copy weights action from the main window.
 
+    :type window: qezskinblender.QEzSkinBlender
     :rtype: None
     """
 
-    instance = qezskinblender.QEzSkinBlender.getInstance()
-
-    if instance is not None:
-
-        instance.copyWeights()
-
-    else:
-
-        log.warning("Cannot locate Ez'Skin-Blender window!")
+    window.copyWeights()
 
 
-def pasteWeights(average=False):
+@uiAccessor
+def pasteWeights(average=False, window=None):
     """
     Calls the paste weights action from the main window.
 
     :type average: bool
+    :type window: qezskinblender.QEzSkinBlender
     :rtype: None
     """
 
-    instance = qezskinblender.QEzSkinBlender.getInstance()
-
-    if instance is not None:
-
-        instance.pasteWeights(average=average)
-
-    else:
-
-        log.warning("Cannot locate Ez'Skin-Blender window!")
+    window.pasteWeights(average=average)
 
 
-def blendVertices():
+@uiAccessor
+def pruneWeights(window=None):
+    """
+    Calls the prune vertices action from the main window.
+
+    :type window: qezskinblender.QEzSkinBlender
+    :rtype: None
+    """
+
+    window.pruneWeights()
+
+
+@uiAccessor
+def relaxVertices(window=None):
+    """
+    Calls the relax vertices action from the main window.
+
+    :type window: qezskinblender.QEzSkinBlender
+    :rtype: None
+    """
+
+    window.relaxVertices()
+
+
+@uiAccessor
+def blendVertices(window=None):
     """
     Calls the blend vertices action from the main window.
 
+    :type window: qezskinblender.QEzSkinBlender
     :rtype: None
     """
 
-    instance = qezskinblender.QEzSkinBlender.getInstance()
-
-    if instance is not None:
-
-        instance.blendVertices()
-
-    else:
-
-        log.warning("Cannot locate Ez'Skin-Blender window!")
+    window.blendVertices()
 
 
-def blendBetweenVertices():
+@uiAccessor
+def blendBetweenVertices(window=None):
     """
     Calls the blend between vertices action from the main window.
 
+    :type window: qezskinblender.QEzSkinBlender
     :rtype: None
     """
 
-    instance = qezskinblender.QEzSkinBlender.getInstance()
+    window.blendBetweenVertices()
 
-    if instance is not None:
 
-        instance.blendBetweenVertices()
+@uiAccessor
+def setWeights(amount, window=None):
+    """
+    Calls the set vertices action from the main window.
 
-    else:
+    :type amount: float
+    :type window: qezskinblender.QEzSkinBlender
+    :rtype: None
+    """
 
-        log.warning("Cannot locate Ez'Skin-Blender window!")
+    window.setWeights(amount)
+
+
+@uiAccessor
+def pruneWeights(window=None):
+    """
+    Calls the prune vertices action from the main window.
+
+    :type window: qezskinblender.QEzSkinBlender
+    :rtype: None
+    """
+
+    window.pruneWeights()

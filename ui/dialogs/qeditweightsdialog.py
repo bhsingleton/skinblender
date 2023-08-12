@@ -224,7 +224,9 @@ class QLoadWeightsDialog(quicdialog.QUicDialog):
             # Create remap combo box
             #
             comboBox = QtWidgets.QComboBox(parent=self.influenceTableWidget)
+            comboBox.setFocusPolicy(QtCore.Qt.ClickFocus)
             comboBox.addItems(list(currentInfluences.values()))
+            comboBox.installEventFilter(self)
 
             # Assign items to table
             #
@@ -244,6 +246,26 @@ class QLoadWeightsDialog(quicdialog.QUicDialog):
         # Try and match influences by name
         #
         self.matchInfluences()
+    # endregion
+
+    # region Events
+    def eventFilter(self, watched, event):
+        """
+        Filters events if this object has been installed as an event filter for the watched object.
+        In your reimplementation of this function, if you want to filter the event out, i.e. stop it being handled further, return true; otherwise return false.
+
+        :type watched: QtCore.QObject
+        :type event: QtCore.QEvent
+        :rtype bool
+        """
+
+        if isinstance(watched, QtWidgets.QComboBox) and isinstance(event, QtGui.QWheelEvent):
+
+            return True  # This blocks the scroll-wheel from messing up influences!
+
+        else:
+
+            return False
     # endregion
 
     # region Slots

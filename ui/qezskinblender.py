@@ -1057,12 +1057,11 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         self.invalidateWeights()
 
     @validate
-    def mirrorWeights(self, pull=False, swap=False):
+    def mirrorWeights(self, pull=False):
         """
         Mirrors the active component selection.
 
         :type pull: bool
-        :type swap: bool
         :rtype: None
         """
 
@@ -1088,6 +1087,53 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         else:
 
             self.invalidateWeights()
+
+    @validate
+    def swapWeights(self):
+        """
+        Swaps the active component selection.
+
+        :rtype: None
+        """
+
+        # Swap vertex weights
+        #
+        vertexWeights = self.skin.vertexWeights(*self.selection())
+        swappedWeights = {vertexIndex: self.skin.mirrorWeights(influenceWeights) for (vertexIndex, influenceWeights) in vertexWeights.items()}
+
+        # Apply swapped weights
+        #
+        self.skin.applyVertexWeights(swappedWeights)
+        self.invalidateWeights()
+
+    @validate
+    def transferWeights(self):
+        """
+        Transfer the vertex weights the active component selection.
+
+        :rtype: None
+        """
+
+        # Evaluate selection
+        #
+        selection = self.selection()
+        selectionCount = len(selection)
+
+        if selectionCount != 2:
+
+            return
+
+        # Transfer vertex weight to other vertex
+        #
+        vertexIndex, otherVertexIndex = selection
+        vertexWeights = self.skin.vertexWeights(vertexIndex)
+
+        transferredWeights = {otherVertexIndex: self.skin.mirrorWeights(vertexWeights[vertexIndex])}
+
+        # Apply transferred weights
+        #
+        self.skin.applyVertexWeights(transferredWeights)
+        self.invalidateWeights()
 
     @validate
     def selectAffectedVertices(self):
@@ -1774,10 +1820,19 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         """
 
         modifiers = QtWidgets.QApplication.keyboardModifiers()
-        pull = modifiers == QtCore.Qt.ShiftModifier
-        swap = modifiers == QtCore.Qt.AltModifier
 
-        self.mirrorWeights(pull=pull, swap=swap)
+        if modifiers == QtCore.Qt.ControlModifier:
+
+            self.transferWeights()
+
+        elif modifiers == QtCore.Qt.AltModifier:
+
+            self.swapWeights()
+
+        else:
+
+            pull = modifiers == QtCore.Qt.ShiftModifier
+            self.mirrorWeights(pull=pull)
 
     @QtCore.Slot(bool)
     def on_pruneDropDownButton_clicked(self, checked=False):

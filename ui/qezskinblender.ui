@@ -388,6 +388,9 @@ QPushButton:checked { background-color: firebrick; border: none; }</string>
              <property name="alternatingRowColors">
               <bool>true</bool>
              </property>
+             <property name="selectionMode">
+              <enum>QAbstractItemView::SingleSelection</enum>
+             </property>
              <property name="selectionBehavior">
               <enum>QAbstractItemView::SelectRows</enum>
              </property>
@@ -1488,17 +1491,17 @@ QPushButton:hover:checked { background-color: crimson; }</string>
   </connection>
  </connections>
  <buttongroups>
-  <buttongroup name="percentPresetButtonGroup"/>
-  <buttongroup name="scaleWeightButtonGroup">
-   <property name="exclusive">
-    <bool>true</bool>
-   </property>
-  </buttongroup>
-  <buttongroup name="incrementWeightButtonGroup"/>
   <buttongroup name="weightPresetButtonGroup">
    <property name="exclusive">
     <bool>true</bool>
    </property>
   </buttongroup>
+  <buttongroup name="incrementWeightButtonGroup"/>
+  <buttongroup name="scaleWeightButtonGroup">
+   <property name="exclusive">
+    <bool>true</bool>
+   </property>
+  </buttongroup>
+  <buttongroup name="percentPresetButtonGroup"/>
  </buttongroups>
 </ui>

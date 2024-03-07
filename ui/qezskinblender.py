@@ -579,9 +579,14 @@ class QEzSkinBlender(quicwindow.QUicWindow):
 
         # Initialize influence item model
         #
+        itemPrototype = QtGui.QStandardItem('')
+        itemPrototype.setSizeHint(QtCore.QSize(72, 24))
+        itemPrototype.setTextAlignment(QtCore.Qt.AlignCenter)
+
         self.influenceItemModel = QtGui.QStandardItemModel(parent=self.influenceTable)
         self.influenceItemModel.setObjectName('influenceItemModel')
         self.influenceItemModel.setHorizontalHeaderLabels(['Name'])
+        self.influenceItemModel.setItemPrototype(itemPrototype)
 
         self.influenceItemFilterModel = qinfluenceitemfiltermodel.QInfluenceItemFilterModel(parent=self.influenceTable)
         self.influenceItemFilterModel.setObjectName('influenceItemFilterModel')
@@ -591,9 +596,14 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         
         # Initialize weight item model
         #
+        itemPrototype = QtGui.QStandardItem('')
+        itemPrototype.setSizeHint(QtCore.QSize(72, 24))
+        itemPrototype.setTextAlignment(QtCore.Qt.AlignCenter)
+
         self.weightItemModel = QtGui.QStandardItemModel(parent=self.weightTable)
         self.weightItemModel.setObjectName('weightItemModel')
         self.weightItemModel.setHorizontalHeaderLabels(['Name', 'Weight'])
+        self.influenceItemModel.setItemPrototype(itemPrototype)
 
         self.weightItemFilterModel = qinfluenceitemfiltermodel.QInfluenceItemFilterModel(parent=self.weightTable)
         self.weightItemFilterModel.setObjectName('weightItemFilterModel')
@@ -1152,25 +1162,6 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         selection = self.skin.getVerticesByInfluenceId(*selectedRows)
         self.skin.setSelection(selection)
 
-    @staticmethod
-    def fillItemModel(model, rowCount, columnCount):
-        """
-        Fills the supplied model with standard items.
-
-        :type model: QtGui.QStandardItemModel
-        :type rowCount: int
-        :type columnCount: int
-        :rtype: None
-        """
-
-        for row in range(model.rowCount(), rowCount, 1):
-
-            model.setVerticalHeaderItem(row, QtGui.QStandardItem(str(row)))
-
-            for column in range(columnCount):
-
-                model.setItem(row, column, QtGui.QStandardItem(''))
-
     @validate
     def invalidateInfluences(self):
         """
@@ -1179,13 +1170,13 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         :rtype: None
         """
 
-        # Fill item model
+        # Resize item model
         #
         influences = self.skin.influences()
         maxInfluenceId = influences.lastIndex()
         rowCount = maxInfluenceId + 1
 
-        self.fillItemModel(self.influenceItemModel, rowCount, 1)
+        self.influenceItemModel.setRowCount(rowCount)
 
         # Iterate through influences
         #
@@ -1202,9 +1193,8 @@ class QEzSkinBlender(quicwindow.QUicWindow):
 
             # Update item data
             #
-            item = self.influenceItemModel.item(i)
-            item.setText(influenceName)
-            item.setTextAlignment(QtCore.Qt.AlignCenter)
+            index = self.influenceItemModel.index(i, 0)
+            self.influenceItemModel.setData(index, influenceName, role=QtCore.Qt.DisplayRole)
 
         # Invalidate filter model
         #
@@ -1239,13 +1229,13 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         :rtype: None
         """
 
-        # Fill item model
+        # Resize item model
         #
         influences = self.skin.influences()
         maxInfluenceId = influences.lastIndex()
         rowCount = maxInfluenceId + 1
 
-        self.fillItemModel(self.weightItemModel, rowCount, 2)
+        self.weightItemModel.setRowCount(rowCount)
 
         # Get vertex weights
         #
@@ -1266,23 +1256,26 @@ class QEzSkinBlender(quicwindow.QUicWindow):
             # Get influence name and weight
             #
             influence = influences[i]
-
             influenceName = ''
-            influenceWeight = self._weights.get(i, None)
 
             if influence is not None:
 
                 influenceName = influence.name()
 
+            weight = self._weights.get(i, None)
+            influenceWeight = ''
+
+            if weight is not None:
+
+                influenceWeight = str(round(weight, 2))
+
             # Update item data
             #
-            item1 = self.weightItemModel.item(i)
-            item1.setText(influenceName)
-            item1.setTextAlignment(QtCore.Qt.AlignCenter)
+            index = self.weightItemModel.index(i, 0)
+            self.weightItemModel.setData(index, influenceName, role=QtCore.Qt.DisplayRole)
 
-            item2 = self.weightItemModel.item(i, column=1)
-            item2.setText(str(round(influenceWeight, 2)) if influenceWeight is not None else '')
-            item2.setTextAlignment(QtCore.Qt.AlignCenter)
+            index = self.weightItemModel.index(i, 1)
+            self.weightItemModel.setData(index, influenceWeight, role=QtCore.Qt.DisplayRole)
 
         # Invalidate filter model
         #

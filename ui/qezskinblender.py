@@ -15,6 +15,32 @@ log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
 
 
+def onPreFileOpening(*args, **kwargs):
+    """
+    Callback method for any file IO changes.
+
+    :rtype: None
+    """
+
+    # Check if instance exists
+    #
+    instance = QEzSkinBlender.getInstance()
+
+    if instance is None:
+
+        return
+
+    # Evaluate if instance is still valid
+    #
+    if QtCompat.isValid(instance):
+
+        instance.envelopePushButton.setChecked(False)
+
+    else:
+
+        log.warning('Unable to process file changed callback!')
+
+
 def onActiveSelectionChanged(*args, **kwargs):
     """
     Callback method for any selection changes.
@@ -418,6 +444,7 @@ class QEzSkinBlender(quicwindow.QUicWindow):
 
         # Add scene notifies
         #
+        self._notifies.addPreFileOpenNotify(onPreFileOpening)
         self._notifies.addSelectionChangedNotify(onActiveSelectionChanged)
         self._notifies.addUndoNotify(onUndoBufferChanged)
         self._notifies.addRedoNotify(onUndoBufferChanged)
@@ -603,7 +630,7 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         self.weightItemModel = QtGui.QStandardItemModel(parent=self.weightTable)
         self.weightItemModel.setObjectName('weightItemModel')
         self.weightItemModel.setHorizontalHeaderLabels(['Name', 'Weight'])
-        self.influenceItemModel.setItemPrototype(itemPrototype)
+        self.weightItemModel.setItemPrototype(itemPrototype)
 
         self.weightItemFilterModel = qinfluenceitemfiltermodel.QInfluenceItemFilterModel(parent=self.weightTable)
         self.weightItemFilterModel.setObjectName('weightItemFilterModel')

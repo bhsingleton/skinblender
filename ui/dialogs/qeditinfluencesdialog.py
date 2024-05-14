@@ -388,7 +388,7 @@ class QRemoveInfluencesDialog(QEditInfluencesDialog):
 
         # Edit window title
         #
-        self.setWindowTitle('|| Add Influences')
+        self.setWindowTitle('|| Remove Influences')
 
     def isValidInfluence(self, influence):
         """

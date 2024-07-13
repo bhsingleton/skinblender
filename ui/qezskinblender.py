@@ -444,10 +444,14 @@ class QEzSkinBlender(quicwindow.QUicWindow):
 
         # Add scene notifies
         #
-        self._notifies.addPreFileOpenNotify(onPreFileOpening)
-        self._notifies.addSelectionChangedNotify(onActiveSelectionChanged)
-        self._notifies.addUndoNotify(onUndoBufferChanged)
-        self._notifies.addRedoNotify(onUndoBufferChanged)
+        numNotifies = len(self._notifies)
+
+        if numNotifies == 0:
+
+            self._notifies.addPreFileOpenNotify(onPreFileOpening)
+            self._notifies.addSelectionChangedNotify(onActiveSelectionChanged)
+            self._notifies.addUndoNotify(onUndoBufferChanged)
+            self._notifies.addRedoNotify(onUndoBufferChanged)
 
     def closeEvent(self, event):
         """

@@ -302,8 +302,10 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         :rtype: None
         """
 
-        actions = self.mirrorAxisActionGroup.actions()
-        actions[axis].setChecked(True)
+        if isinstance(axis, int):
+
+            actions = self.mirrorAxisActionGroup.actions()
+            actions[axis].setChecked(True)
 
     @property
     def pruneTolerance(self):
@@ -324,7 +326,9 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         :rtype: None
         """
 
-        self.pruneSpinBox.setValue(tolerance)
+        if isinstance(tolerance, (int, float)):
+
+            self.pruneSpinBox.setValue(tolerance)
 
     @property
     def slabOption(self):
@@ -349,8 +353,10 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         :rtype: None
         """
 
-        actions = self.slabActionGroup.actions()
-        actions[option].setChecked(True)
+        if isinstance(option, int):
+
+            actions = self.slabActionGroup.actions()
+            actions[option].setChecked(True)
 
     @property
     def blendByDistance(self):
@@ -371,7 +377,9 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         :rtype: None
         """
 
-        self.blendByDistanceAction.setChecked(blendByDistance)
+        if isinstance(blendByDistance, bool):
+
+            self.blendByDistanceAction.setChecked(blendByDistance)
 
     @property
     def mirrorTolerance(self):
@@ -384,15 +392,17 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         return self._mirrorTolerance
 
     @mirrorTolerance.setter
-    def mirrorTolerance(self, mirrorTolerance):
+    def mirrorTolerance(self, tolerance):
         """
         Setter method that updates the mirror tolerance.
 
-        :type mirrorTolerance: float
+        :type tolerance: float
         :rtype: None
         """
 
-        self._mirrorTolerance = mirrorTolerance
+        if isinstance(tolerance, (int, float)):
+
+            self._mirrorTolerance = tolerance
 
     @property
     def search(self):
@@ -442,11 +452,11 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         #
         super(QEzSkinBlender, self).showEvent(event)
 
-        # Add scene notifies
+        # Add notifies
         #
-        numNotifies = len(self._notifies)
+        hasNotifies = len(self._notifies) > 0
 
-        if numNotifies == 0:
+        if not hasNotifies:
 
             self._notifies.addPreFileOpenNotify(onPreFileOpening)
             self._notifies.addSelectionChangedNotify(onActiveSelectionChanged)
@@ -467,7 +477,7 @@ class QEzSkinBlender(quicwindow.QUicWindow):
 
             self.envelopePushButton.setChecked(False)
 
-        # Clear notifies
+        # Remove notifies
         #
         self._notifies.clear()
 
@@ -760,11 +770,11 @@ class QEzSkinBlender(quicwindow.QUicWindow):
 
         # Load user settings
         #
-        self.mirrorAxis = int(settings.value('editor/mirrorAxis', defaultValue=0))
-        self.mirrorTolerance = float(settings.value('editor/mirrorTolerance', defaultValue='1e-3'))
-        self.blendByDistance = bool(settings.value('editor/blendByDistance', defaultValue=0))
-        self.pruneTolerance = float(settings.value('editor/pruneTolerance', defaultValue='1e-2'))
-        self.slabOption = int(settings.value('editor/slabOption', defaultValue=0))
+        self.mirrorAxis = settings.value('editor/mirrorAxis', defaultValue=0, type=int)
+        self.mirrorTolerance = settings.value('editor/mirrorTolerance', defaultValue='1e-3', type=float)
+        self.blendByDistance = bool(settings.value('editor/blendByDistance', defaultValue=0, type=int))
+        self.pruneTolerance = settings.value('editor/pruneTolerance', defaultValue='1e-2', type=float)
+        self.slabOption = settings.value('editor/slabOption', defaultValue=0, type=int)
 
     def selection(self):
         """

@@ -228,9 +228,9 @@ class QEditInfluencesDialog(quicdialog.QUicDialog):
 
     def selectedInfluences(self):
         """
-        Returns a list the selected influence objects.
+        Returns a list of the selected influence IDs.
 
-        :rtype: list
+        :rtype: List[int]
         """
 
         # Get selected items
@@ -242,12 +242,7 @@ class QEditInfluencesDialog(quicdialog.QUicDialog):
 
         for (i, index) in enumerate(selectedIndices):
 
-            # Get associated item
-            #
-            index = self.influenceItemFilterModel.mapToSource(index)
-            item = self.influenceItemModel.itemFromIndex(index)
-
-            influences[i] = item.text()
+            influences[i] = self.influenceItemFilterModel.mapToSource(index).row()
 
         return influences
 

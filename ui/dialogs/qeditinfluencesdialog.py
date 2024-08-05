@@ -1,7 +1,8 @@
 from Qt import QtCore, QtWidgets, QtGui
 from abc import abstractmethod
 from dcc import fnskin, fnnode
-from dcc.ui.dialogs import quicdialog
+from dcc.python import stringutils
+from dcc.ui.dialogs import qmaindialog
 
 import logging
 logging.basicConfig()
@@ -9,9 +10,9 @@ log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
 
 
-class QEditInfluencesDialog(quicdialog.QUicDialog):
+class QEditInfluencesDialog(qmaindialog.QMainDialog):
     """
-    Overload of `QUicDialog` that edit influences for a skin.
+    Overload of `QMainDialog` that add/removes influence objects from a skin.
     """
 
     # region Dunderscores
@@ -31,24 +32,120 @@ class QEditInfluencesDialog(quicdialog.QUicDialog):
         # Declare private variables
         #
         self._skin = fnskin.FnSkin()
+        self._influences = None
         self._root = fnnode.FnNode()
 
         # Declare public variables
         #
+        self.yesIcon = QtGui.QIcon(':dcc/icons/yes.png')
+        self.noIcon = QtGui.QIcon(':dcc/icons/no.png')
+
         self.filterLineEdit = None
         self.influenceTreeView = None
         self.influenceItemModel = None  # type: QtGui.QStandardItemModel
         self.influenceItemFilterModel = None  # type: QtCore.QSortFilterProxyModel
+
+        self.buttonsLayout = None
         self.buttonsWidget = None
         self.okayPushButton = None
         self.cancelPushButton = None
+
+    def __setup_ui__(self, *args, **kwargs):
+        """
+        Private method that initializes the user interface.
+
+        :rtype: None
+        """
+
+        # Call parent method
+        #
+        super(QEditInfluencesDialog, self).__setup_ui__(*args, **kwargs)
+
+        # Initialize dialog
+        #
+        self.setWindowTitle("|| Edit Influences")
+        self.setMinimumSize(QtCore.QSize(250, 350))
+
+        # Initialize central widget
+        #
+        centralLayout = QtWidgets.QVBoxLayout()
+        centralLayout.setObjectName('centralLayout')
+
+        self.setLayout(centralLayout)
+
+        # Initialize influence tree-view
+        #
+        self.filterLineEdit = QtWidgets.QLineEdit()
+        self.filterLineEdit.setObjectName('filterLineEdit')
+        self.filterLineEdit.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.filterLineEdit.setFixedHeight(24)
+        self.filterLineEdit.setPlaceholderText('Filter Influences...')
+        self.filterLineEdit.setClearButtonEnabled(True)
+        self.filterLineEdit.textChanged.connect(self.on_filterLineEdit_textChanged)
+
+        self.influenceTreeView = QtWidgets.QTreeView()
+        self.influenceTreeView.setObjectName('influenceTreeView')
+        self.influenceTreeView.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding))
+        self.influenceTreeView.setStyleSheet('QTreeView:item { height: 24; }')
+        self.influenceTreeView.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.influenceTreeView.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        self.influenceTreeView.setAlternatingRowColors(True)
+        self.influenceTreeView.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+        self.influenceTreeView.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+        self.influenceTreeView.setRootIsDecorated(True)
+        self.influenceTreeView.setUniformRowHeights(True)
+        self.influenceTreeView.setAnimated(True)
+        self.influenceTreeView.setHeaderHidden(True)
+        self.influenceTreeView.expanded.connect(self.on_influenceTreeView_expanded)
+        self.influenceTreeView.collapsed.connect(self.on_influenceTreeView_collapsed)
+
+        self.influenceItemModel = QtGui.QStandardItemModel(0, 1, parent=self.influenceTreeView)
+        self.influenceItemModel.setObjectName('influenceItemModel')
+        self.influenceItemModel.setHorizontalHeaderLabels(['Name'])
+
+        self.influenceItemFilterModel = QtCore.QSortFilterProxyModel(parent=self.influenceTreeView)
+        self.influenceItemFilterModel.setObjectName('influenceItemFilterModel')
+        self.influenceItemFilterModel.setSourceModel(self.influenceItemModel)
+        self.influenceItemFilterModel.setRecursiveFilteringEnabled(True)
+
+        self.influenceTreeView.setModel(self.influenceItemFilterModel)
+
+        centralLayout.addWidget(self.filterLineEdit)
+        centralLayout.addWidget(self.influenceTreeView)
+
+        # Initialize buttons widget
+        #
+        self.buttonsLayout = QtWidgets.QHBoxLayout()
+        self.buttonsLayout.setObjectName('buttonsLayout')
+        self.buttonsLayout.setContentsMargins(0, 0, 0, 0)
+
+        self.buttonsWidget = QtWidgets.QWidget()
+        self.buttonsWidget.setObjectName('buttonsWidget')
+        self.buttonsWidget.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.buttonsWidget.setFixedHeight(24)
+        self.buttonsWidget.setLayout(self.buttonsLayout)
+
+        self.okayPushButton = QtWidgets.QPushButton('OK')
+        self.okayPushButton.setObjectName('okayPushButton')
+        self.okayPushButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred))
+        self.okayPushButton.clicked.connect(self.accept)
+
+        self.cancelPushButton = QtWidgets.QPushButton('Cancel')
+        self.cancelPushButton.setObjectName('cancelPushButton')
+        self.cancelPushButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred))
+        self.cancelPushButton.clicked.connect(self.reject)
+
+        self.buttonsLayout.addWidget(self.okayPushButton)
+        self.buttonsLayout.addWidget(self.cancelPushButton)
+
+        centralLayout.addWidget(self.buttonsWidget)
     # endregion
 
     # region Properties
     @property
     def skin(self):
         """
-        Getter method used to retrieve the skin cluster object.
+        Getter method that returns the skin interface.
 
         :rtype: fnskin.FnSkin
         """
@@ -58,7 +155,7 @@ class QEditInfluencesDialog(quicdialog.QUicDialog):
     @skin.setter
     def skin(self, skin):
         """
-        Setter method used to update the skin cluster object.
+        Setter method that updates the skin interface.
 
         :type skin: Union[om.MObject, pymxs.MXSWrapperBase]
         :rtype: None
@@ -71,17 +168,29 @@ class QEditInfluencesDialog(quicdialog.QUicDialog):
         if success:
 
             self._root.setObject(self._skin.findRoot())
+            self._influences = self._skin.influences()
+
             self.invalidate()
 
     @property
     def root(self):
         """
-        Getter method used to retrieve associated skeleton root object.
+        Getter method that returns the skin influence root.
 
         :rtype: fnnode.FnNode
         """
 
         return self._root
+
+    @property
+    def influences(self):
+        """
+        Getter method that returns the skin influence objects.
+
+        :rtype: Dict[int, fnnode.FnNode]
+        """
+
+        return self._influences
 
     @property
     def textFilter(self):
@@ -106,34 +215,6 @@ class QEditInfluencesDialog(quicdialog.QUicDialog):
     # endregion
 
     # region Methods
-    def postLoad(self, *args, **kwargs):
-        """
-        Called after the user interface has been loaded.
-
-        :rtype: None
-        """
-
-        # Call parent method
-        #
-        super(QEditInfluencesDialog, self).postLoad(*args, **kwargs)
-
-        # Initialize item model
-        #
-        self.influenceItemModel = QtGui.QStandardItemModel(0, 1, parent=self.influenceTreeView)
-        self.influenceItemModel.setObjectName('influenceItemModel')
-        self.influenceItemModel.setHorizontalHeaderLabels(['Joint'])
-
-        # Initialize filter model
-        #
-        self.influenceItemFilterModel = QtCore.QSortFilterProxyModel(parent=self.influenceTreeView)
-        self.influenceItemFilterModel.setObjectName('influenceItemFilterModel')
-        self.influenceItemFilterModel.setSourceModel(self.influenceItemModel)
-        self.influenceItemFilterModel.setRecursiveFilteringEnabled(True)
-
-        # Assign filter model to tree view
-        #
-        self.influenceTreeView.setModel(self.influenceItemFilterModel)
-
     @abstractmethod
     def isValidInfluence(self, influence):
         """
@@ -163,10 +244,13 @@ class QEditInfluencesDialog(quicdialog.QUicDialog):
         # Append row items
         #
         isValid = self.isValidInfluence(influence)
-        icon = QtGui.QIcon(':dcc/icons/yes.png') if isValid else QtGui.QIcon(':dcc/icons/no.png')
+        icon = self.yesIcon if isValid else self.noIcon
         name = influence.absoluteName()
+        whatsThis = name if isValid else ''
 
         item = QtGui.QStandardItem(icon, name)
+        item.setWhatsThis(whatsThis)
+
         parentItem.appendRow(item)
 
         # Iterate through children
@@ -226,23 +310,42 @@ class QEditInfluencesDialog(quicdialog.QUicDialog):
         #
         self.influenceTreeView.resizeColumnToContents(0)
 
-    def selectedInfluences(self):
+    def selectedInfluences(self, id=False):
         """
-        Returns a list of the selected influence IDs.
+        Returns a list of the selected influence names.
 
+        :type id: bool
         :rtype: List[int]
         """
 
         # Get selected items
         #
         selectedIndices = self.influenceTreeView.selectedIndexes()
-        numSelectedIndices = len(selectedIndices)
-
-        influences = [None] * numSelectedIndices
+        influences = []
 
         for (i, index) in enumerate(selectedIndices):
 
-            influences[i] = self.influenceItemFilterModel.mapToSource(index).row()
+            # Check if selected item is valid
+            #
+            index = self.influenceItemFilterModel.mapToSource(index)
+            item = self.influenceItemModel.itemFromIndex(index)
+            whatsThis = item.whatsThis()
+
+            isValid = not stringutils.isNullOrEmpty(whatsThis)
+
+            if not isValid:
+
+                continue
+
+            # Check if ID should be returned
+            #
+            if id:
+
+                influences.append(self.influences.index(whatsThis))
+
+            else:
+
+                influences.append(item.text())
 
         return influences
 
@@ -270,7 +373,7 @@ class QEditInfluencesDialog(quicdialog.QUicDialog):
     @QtCore.Slot(str)
     def on_filterLineEdit_textChanged(self, text):
         """
-        Slot method for the filterLineEdit's `textChanged` signal.
+        Slot method for the `filterLineEdit` widget's `textChanged` signal.
 
         :type text: str
         :rtype: None
@@ -282,7 +385,7 @@ class QEditInfluencesDialog(quicdialog.QUicDialog):
     @QtCore.Slot(QtCore.QModelIndex)
     def on_influenceTreeView_expanded(self, index):
         """
-        Expanded slot method responsible for recursively expanding all derived items.
+        Slot method for the `influenceTreeView` widget's `expanded` signal.
 
         :type index: QtCore.QModelIndex
         :rtype: None
@@ -293,7 +396,7 @@ class QEditInfluencesDialog(quicdialog.QUicDialog):
     @QtCore.Slot(QtCore.QModelIndex)
     def on_influenceTreeView_collapsed(self, index):
         """
-        Collapsed slot method responsible for recursively collapsing all derived items.
+        Slot method for the `influenceTreeView` widget's `collapsed` signal.
 
         :type index: QtCore.QModelIndex
         :rtype: None
@@ -308,22 +411,24 @@ class QAddInfluencesDialog(QEditInfluencesDialog):
     Overload of `QEditInfluencesDialog` that adds influences to a skin.
     """
 
-    # region Methods
-    def postLoad(self, *args, **kwargs):
+    # region Dunderscores
+    def __setup_ui__(self, *args, **kwargs):
         """
-        Called after the user interface has been loaded.
+        Private method that initializes the user interface.
 
         :rtype: None
         """
 
         # Call parent method
         #
-        super(QAddInfluencesDialog, self).postLoad(*args, **kwargs)
+        super(QAddInfluencesDialog, self).__setup_ui__(*args, **kwargs)
 
         # Edit window title
         #
-        self.setWindowTitle('|| Add Influences')
+        self.setWindowTitle('|| Add Influence(s)')
+    # endregion
 
+    # region Methods
     def isValidInfluence(self, influence):
         """
         Evaluates if the supplied influence is valid.
@@ -332,21 +437,21 @@ class QAddInfluencesDialog(QEditInfluencesDialog):
         :rtype: bool
         """
 
-        return influence not in self.skin.influences()
+        return influence not in self.influences
     # endregion
 
     # region Slots
     @QtCore.Slot()
     def accept(self):
         """
-        Hides the modal dialog and sets the result code to QDialogCode.Accepted.
+        Slot method for the dialog's `accept` signal.
 
         :rtype: None
         """
 
         # Check how many influences were selected
         #
-        selectedInfluences = self.selectedInfluences()
+        selectedInfluences = self.selectedInfluences(id=False)
         numSelected = len(selectedInfluences)
 
         if numSelected > 0:
@@ -369,22 +474,24 @@ class QRemoveInfluencesDialog(QEditInfluencesDialog):
     Overload of `QEditInfluencesDialog` that removes influences from a skin.
     """
 
-    # region Methods
-    def postLoad(self, *args, **kwargs):
+    # region Dunderscores
+    def __setup_ui__(self, *args, **kwargs):
         """
-        Called after the user interface has been loaded.
+        Private method that initializes the user interface.
 
         :rtype: None
         """
 
         # Call parent method
         #
-        super(QRemoveInfluencesDialog, self).postLoad(*args, **kwargs)
+        super(QRemoveInfluencesDialog, self).__setup_ui__(*args, **kwargs)
 
         # Edit window title
         #
-        self.setWindowTitle('|| Remove Influences')
+        self.setWindowTitle('|| Remove Influence(s)')
+    # endregion
 
+    # region Methods
     def isValidInfluence(self, influence):
         """
         Evaluates if the supplied influence is valid.
@@ -393,21 +500,21 @@ class QRemoveInfluencesDialog(QEditInfluencesDialog):
         :rtype: bool
         """
 
-        return influence in self.skin.influences()
+        return influence in self.influences
     # endregion
 
     # region Slots
     @QtCore.Slot()
     def accept(self):
         """
-        Hides the modal dialog and sets the result code to QDialogCode.Accepted.
+        Slot method for the dialog's `accept` signal.
 
         :rtype: None
         """
 
         # Check how many influences were selected
         #
-        selectedInfluences = self.selectedInfluences()
+        selectedInfluences = self.selectedInfluences(id=True)
         numSelected = len(selectedInfluences)
 
         if numSelected > 0:

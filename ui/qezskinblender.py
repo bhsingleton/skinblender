@@ -4,7 +4,7 @@ import webbrowser
 from Qt import QtCore, QtWidgets, QtGui, QtCompat
 from dcc import fnscene, fnnode, fnmesh, fnskin, fnnotify
 from dcc.ui import quicwindow
-from .dialogs import qeditinfluencesdialog, qeditweightsdialog
+from .dialogs import qeditinfluencesdialog, qloadweightsdialog
 from .models import qinfluenceitemfiltermodel
 from ..libs import skinutils
 from ..decorators.validate import validate
@@ -1527,7 +1527,7 @@ class QEzSkinBlender(quicwindow.QUicWindow):
         if os.path.exists(filePath):
 
             log.info('Loading weights from: %s' % filePath)
-            qeditweightsdialog.loadWeights(selection[0], filePath, parent=self)
+            qloadweightsdialog.loadWeights(selection[0], filePath, parent=self)
 
         else:
 

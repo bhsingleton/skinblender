@@ -2,7 +2,7 @@ from Qt import QtCore, QtWidgets, QtGui
 from six import string_types
 from itertools import chain
 from dcc import fnskin, fnnode
-from dcc.ui.dialogs import quicdialog
+from dcc.ui.dialogs import qmaindialog
 from ...libs import skinweights, skinutils
 
 import logging
@@ -11,9 +11,9 @@ log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
 
 
-class QLoadWeightsDialog(quicdialog.QUicDialog):
+class QLoadWeightsDialog(qmaindialog.QMainDialog):
     """
-    Overload of `QDialog` that loads skin weights onto skins.
+    Overload of `QMainDialog` that loads skin weights onto a skin.
     """
 
     # region Dunderscores
@@ -37,16 +37,138 @@ class QLoadWeightsDialog(quicdialog.QUicDialog):
 
         # Declare public variables
         #
+        self.influenceLayout = None
         self.influenceGroupBox = None
         self.influenceTableWidget = None
+
+        self.buttonsLayout = None
         self.buttonsWidget = None
         self.methodLabel = None
         self.indexRadioButton = None
         self.positionRadioButton = None
         self.methodButtonGroup = None
+        self.horizontalSpacer = None
         self.matchPushButton = None
         self.okayPushButton = None
         self.cancelPushButton = None
+
+    def __setup_ui__(self, *args, **kwargs):
+        """
+        Private method that initializes the user interface.
+
+        :rtype: None
+        """
+
+        # Call parent method
+        #
+        super(QLoadWeightsDialog, self).__setup_ui__(*args, **kwargs)
+
+        # Initialize dialog
+        #
+        self.setWindowTitle("|| Load Weights")
+        self.setMinimumSize(QtCore.QSize(535, 280))
+
+        # Initialize central widget
+        #
+        centralLayout = QtWidgets.QVBoxLayout()
+        centralLayout.setObjectName('centralLayout')
+
+        self.setLayout(centralLayout)
+
+        # Initialize influence group-box
+        #
+        self.influenceLayout = QtWidgets.QVBoxLayout()
+        self.influenceLayout.setObjectName('influenceLayout')
+
+        self.influenceGroupBox = QtWidgets.QGroupBox('Influences:')
+        self.influenceGroupBox.setObjectName('influenceGroupBox')
+        self.influenceGroupBox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding))
+        self.influenceGroupBox.setLayout(self.influenceLayout)
+
+        self.influenceTableWidget = QtWidgets.QTableWidget()
+        self.influenceTableWidget.setObjectName('influenceTableWidget')
+        self.influenceTableWidget.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred))
+        self.influenceTableWidget.setStyleSheet('QTableWidget:item { height: 24; }')
+        self.influenceTableWidget.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.influenceTableWidget.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        self.influenceTableWidget.setAlternatingRowColors(True)
+        self.influenceTableWidget.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+        self.influenceTableWidget.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+        self.influenceTableWidget.setColumnCount(2)
+        self.influenceTableWidget.setHorizontalHeaderLabels(['Joint', 'Current'])
+
+        horizontalHeader = self.influenceTableWidget.horizontalHeader()  # type: QtWidgets.QHeaderView
+        horizontalHeader.setStretchLastSection(True)
+        horizontalHeader.setMinimumSectionSize(50)
+        horizontalHeader.setDefaultSectionSize(100)
+
+        verticalHeader = self.influenceTableWidget.verticalHeader()  # type: QtWidgets.QHeaderView
+        verticalHeader.setStretchLastSection(False)
+        verticalHeader.setMinimumSectionSize(24)
+        verticalHeader.setDefaultSectionSize(24)
+
+        self.influenceLayout.addWidget(self.influenceTableWidget)
+
+        centralLayout.addWidget(self.influenceGroupBox)
+
+        # Initialize buttons widget
+        #
+        self.buttonsLayout = QtWidgets.QHBoxLayout()
+        self.buttonsLayout.setObjectName('buttonsLayout')
+        self.buttonsLayout.setContentsMargins(0, 0, 0, 0)
+
+        self.buttonsWidget = QtWidgets.QWidget()
+        self.buttonsWidget.setObjectName('buttonsWidget')
+        self.buttonsWidget.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.buttonsWidget.setFixedHeight(24)
+        self.buttonsWidget.setLayout(self.buttonsLayout)
+
+        self.methodLabel = QtWidgets.QLabel('Load By:')
+        self.methodLabel.setObjectName('methodLabel')
+        self.methodLabel.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred))
+        self.methodLabel.setFixedWidth(50)
+        self.methodLabel.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
+
+        self.indexRadioButton = QtWidgets.QRadioButton('Index')
+        self.indexRadioButton.setObjectName('indexRadioButton')
+        self.indexRadioButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Preferred))
+        self.indexRadioButton.setChecked(True)
+
+        self.positionRadioButton = QtWidgets.QRadioButton('Position')
+        self.positionRadioButton.setObjectName('positionRadioButton')
+        self.positionRadioButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Preferred))
+
+        self.methodButtonGroup = QtWidgets.QButtonGroup(parent=self.buttonsWidget)
+        self.methodButtonGroup.setObjectName('methodButtonGroup')
+        self.methodButtonGroup.setExclusive(True)
+        self.methodButtonGroup.addButton(self.indexRadioButton, id=0)
+        self.methodButtonGroup.addButton(self.positionRadioButton, id=1)
+
+        self.horizontalSpacer = QtWidgets.QSpacerItem(50, 24, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+
+        self.matchPushButton = QtWidgets.QPushButton('Match By Name')
+        self.matchPushButton.setObjectName('matchPushButton')
+        self.matchPushButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Preferred))
+        self.matchPushButton.clicked.connect(self.on_matchPushButton_clicked)
+
+        self.okayPushButton = QtWidgets.QPushButton('OK')
+        self.okayPushButton.setObjectName('okayPushButton')
+        self.okayPushButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Preferred))
+        self.okayPushButton.clicked.connect(self.accept)
+
+        self.cancelPushButton = QtWidgets.QPushButton('Cancel')
+        self.cancelPushButton.setObjectName('cancelPushButton')
+        self.cancelPushButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Preferred))
+        self.cancelPushButton.clicked.connect(self.reject)
+
+        self.buttonsLayout.addWidget(self.methodLabel)
+        self.buttonsLayout.addWidget(self.indexRadioButton)
+        self.buttonsLayout.addWidget(self.positionRadioButton)
+        self.buttonsLayout.addItem(self.horizontalSpacer)
+        self.buttonsLayout.addWidget(self.okayPushButton)
+        self.buttonsLayout.addWidget(self.cancelPushButton)
+
+        centralLayout.addWidget(self.buttonsWidget)
     # endregion
 
     # region Properties
@@ -95,26 +217,27 @@ class QLoadWeightsDialog(quicdialog.QUicDialog):
         self.invalidate()
     # endregion
 
+    # region Events
+    def eventFilter(self, watched, event):
+        """
+        Filters events if this object has been installed as an event filter for the watched object.
+        In your reimplementation of this function, if you want to filter the event out, i.e. stop it being handled further, return true; otherwise return false.
+
+        :type watched: QtCore.QObject
+        :type event: QtCore.QEvent
+        :rtype bool
+        """
+
+        if isinstance(watched, QtWidgets.QComboBox) and isinstance(event, QtGui.QWheelEvent):
+
+            return True  # This blocks the scroll-wheel from messing up influences!
+
+        else:
+
+            return False
+    # endregion
+
     # region Methods
-    def postLoad(self, *args, **kwargs):
-        """
-        Called after the user interface has been loaded.
-
-        :rtype: None
-        """
-
-        # Call parent method
-        #
-        super(QLoadWeightsDialog, self).postLoad(*args, **kwargs)
-
-        # Edit button group
-        #
-        self.methodButtonGroup = QtWidgets.QButtonGroup(parent=self.buttonsWidget)
-        self.methodButtonGroup.setObjectName('methodButtonGroup')
-        self.methodButtonGroup.setExclusive(True)
-        self.methodButtonGroup.addButton(self.indexRadioButton, id=0)
-        self.methodButtonGroup.addButton(self.positionRadioButton, id=1)
-
     def matchInfluences(self):
         """
         Matches the incoming influences with the current influences.
@@ -195,7 +318,7 @@ class QLoadWeightsDialog(quicdialog.QUicDialog):
 
         # Check if skin and weights are valid
         #
-        if not self.skin.isValid() or self.skinWeights is None:
+        if not (self.skin.isValid() and self.skinWeights is not None):
 
             return
 
@@ -248,31 +371,11 @@ class QLoadWeightsDialog(quicdialog.QUicDialog):
         self.matchInfluences()
     # endregion
 
-    # region Events
-    def eventFilter(self, watched, event):
-        """
-        Filters events if this object has been installed as an event filter for the watched object.
-        In your reimplementation of this function, if you want to filter the event out, i.e. stop it being handled further, return true; otherwise return false.
-
-        :type watched: QtCore.QObject
-        :type event: QtCore.QEvent
-        :rtype bool
-        """
-
-        if isinstance(watched, QtWidgets.QComboBox) and isinstance(event, QtGui.QWheelEvent):
-
-            return True  # This blocks the scroll-wheel from messing up influences!
-
-        else:
-
-            return False
-    # endregion
-
     # region Slots
     @QtCore.Slot()
     def accept(self):
         """
-        Hides the modal dialog and sets the result code to `Accepted`.
+        Slot method for the dialog's `accept` signal.
 
         :rtype: None
         """
@@ -298,12 +401,11 @@ class QLoadWeightsDialog(quicdialog.QUicDialog):
 
             raise RuntimeError('accept() expects a valid method (%s given)!' % method)
 
-    @QtCore.Slot(bool)
-    def on_matchPushButton_clicked(self, clicked=False):
+    @QtCore.Slot()
+    def on_matchPushButton_clicked(self):
         """
-        Clicked slot that matches the incoming influences with the current influences.
+        Slot method for the `matchPushButton` widget's `clicked` signal.
 
-        :type clicked: bool
         :rtype: None
         """
 

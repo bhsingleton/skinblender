@@ -1,5 +1,5 @@
 from Qt import QtCore
-from . import qezskinblender
+from ..ui import qezskinblender
 from ..decorators.uiaccessor import uiAccessor
 
 import logging

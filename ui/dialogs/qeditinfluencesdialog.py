@@ -32,8 +32,9 @@ class QEditInfluencesDialog(qmaindialog.QMainDialog):
         # Declare private variables
         #
         self._skin = fnskin.FnSkin()
-        self._influences = None
         self._root = fnnode.FnNode()
+        self._influences = {}
+        self._usedInfluenceIds = []
 
         # Declare public variables
         #
@@ -106,6 +107,7 @@ class QEditInfluencesDialog(qmaindialog.QMainDialog):
         self.influenceItemFilterModel = QtCore.QSortFilterProxyModel(parent=self.influenceTreeView)
         self.influenceItemFilterModel.setObjectName('influenceItemFilterModel')
         self.influenceItemFilterModel.setSourceModel(self.influenceItemModel)
+        self.influenceItemFilterModel.setFilterCaseSensitivity(QtCore.Qt.CaseInsensitive)
         self.influenceItemFilterModel.setRecursiveFilteringEnabled(True)
 
         self.influenceTreeView.setModel(self.influenceItemFilterModel)
@@ -169,6 +171,7 @@ class QEditInfluencesDialog(qmaindialog.QMainDialog):
 
             self._root.setObject(self._skin.findRoot())
             self._influences = self._skin.influences()
+            self._usedInfluenceIds = self._skin.getUsedInfluenceIds()
 
             self.invalidate()
 
@@ -191,6 +194,16 @@ class QEditInfluencesDialog(qmaindialog.QMainDialog):
         """
 
         return self._influences
+
+    @property
+    def usedInfluenceIds(self):
+        """
+        Getter method that returns the active influence IDs.
+
+        :rtype: List[int]
+        """
+
+        return self._usedInfluenceIds
 
     @property
     def textFilter(self):
@@ -500,7 +513,8 @@ class QRemoveInfluencesDialog(QEditInfluencesDialog):
         :rtype: bool
         """
 
-        return influence in self.influences
+        influenceId = self.influences.index(influence)
+        return influenceId is not None and influenceId not in self.usedInfluenceIds
     # endregion
 
     # region Slots

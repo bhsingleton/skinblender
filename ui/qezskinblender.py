@@ -556,13 +556,13 @@ class QEzSkinBlender(qsingletonwindow.QSingletonWindow):
 
         self.weightPresetButtonGroup = QtWidgets.QButtonGroup(self.optionsWidget)
         self.weightPresetButtonGroup.setObjectName('weightPresetButtonGroup')
-        self.weightPresetButtonGroup.setId(self.weightPresetPushButton1, 0)  # 0.0
-        self.weightPresetButtonGroup.setId(self.weightPresetPushButton2, 1)  # 0.1
-        self.weightPresetButtonGroup.setId(self.weightPresetPushButton3, 2)  # 0.25
-        self.weightPresetButtonGroup.setId(self.weightPresetPushButton4, 3)  # 0.5
-        self.weightPresetButtonGroup.setId(self.weightPresetPushButton5, 4)  # 0.75
-        self.weightPresetButtonGroup.setId(self.weightPresetPushButton6, 5)  # 0.9
-        self.weightPresetButtonGroup.setId(self.weightPresetPushButton7, 6)  # 1.0
+        self.weightPresetButtonGroup.addButton(self.weightPresetPushButton1, id=0)  # 0.0
+        self.weightPresetButtonGroup.addButton(self.weightPresetPushButton2, id=1)  # 0.1
+        self.weightPresetButtonGroup.addButton(self.weightPresetPushButton3, id=2)  # 0.25
+        self.weightPresetButtonGroup.addButton(self.weightPresetPushButton4, id=3)  # 0.5
+        self.weightPresetButtonGroup.addButton(self.weightPresetPushButton5, id=4)  # 0.75
+        self.weightPresetButtonGroup.addButton(self.weightPresetPushButton6, id=5)  # 0.9
+        self.weightPresetButtonGroup.addButton(self.weightPresetPushButton7, id=6)  # 1.0
         self.weightPresetButtonGroup.idClicked.connect(self.on_weightPresetButtonGroup_idClicked)
 
         self.weightPresetButtonLayout = QtWidgets.QHBoxLayout()
@@ -609,11 +609,11 @@ class QEzSkinBlender(qsingletonwindow.QSingletonWindow):
 
         self.percentPresetButtonGroup = QtWidgets.QButtonGroup(self.optionsWidget)
         self.percentPresetButtonGroup.setObjectName('percentPresetButtonGroup')
-        self.percentPresetButtonGroup.setId(self.percentPresetPushButton1, 0)  # 0.1
-        self.percentPresetButtonGroup.setId(self.percentPresetPushButton2, 1)  # 0.25
-        self.percentPresetButtonGroup.setId(self.percentPresetPushButton3, 2)  # 0.5
-        self.percentPresetButtonGroup.setId(self.percentPresetPushButton4, 3)  # 0.75
-        self.percentPresetButtonGroup.setId(self.percentPresetPushButton5, 4)  # 1.0
+        self.percentPresetButtonGroup.addButton(self.percentPresetPushButton1, id=0)  # 0.1
+        self.percentPresetButtonGroup.addButton(self.percentPresetPushButton2, id=1)  # 0.25
+        self.percentPresetButtonGroup.addButton(self.percentPresetPushButton3, id=2)  # 0.5
+        self.percentPresetButtonGroup.addButton(self.percentPresetPushButton4, id=3)  # 0.75
+        self.percentPresetButtonGroup.addButton(self.percentPresetPushButton5, id=4)  # 1.0
         self.percentPresetButtonGroup.idClicked.connect(self.on_percentPresetButtonGroup_idClicked)
 
         self.percentPresetButtonLayout = QtWidgets.QHBoxLayout()
@@ -681,8 +681,8 @@ class QEzSkinBlender(qsingletonwindow.QSingletonWindow):
 
         self.incrementWeightButtonGroup = QtWidgets.QButtonGroup(self.optionsWidget)
         self.incrementWeightButtonGroup.setObjectName('incrementWeightButtonGroup')
-        self.incrementWeightButtonGroup.setId(self.incrementWeightPushButton1, 0)  # +
-        self.incrementWeightButtonGroup.setId(self.incrementWeightPushButton2, 1)  # -
+        self.incrementWeightButtonGroup.addButton(self.incrementWeightPushButton1, id=0)  # +
+        self.incrementWeightButtonGroup.addButton(self.incrementWeightPushButton2, id=1)  # -
         self.incrementWeightButtonGroup.idClicked.connect(self.on_incrementWeightButtonGroup_idClicked)
 
         self.incrementWeightButtonLayout = QtWidgets.QHBoxLayout()
@@ -723,8 +723,8 @@ class QEzSkinBlender(qsingletonwindow.QSingletonWindow):
 
         self.scaleWeightButtonGroup = QtWidgets.QButtonGroup(self.optionsWidget)
         self.scaleWeightButtonGroup.setObjectName('scaleWeightButtonGroup')
-        self.scaleWeightButtonGroup.setId(self.scaleWeightPushButton1, 0)  # +
-        self.scaleWeightButtonGroup.setId(self.scaleWeightPushButton2, 1)  # -
+        self.scaleWeightButtonGroup.addButton(self.scaleWeightPushButton1, id=0)  # +
+        self.scaleWeightButtonGroup.addButton(self.scaleWeightPushButton2, id=1)  # -
         self.scaleWeightButtonGroup.idClicked.connect(self.on_scaleWeightButtonGroup_idClicked)
 
         self.scaleWeightButtonLayout = QtWidgets.QHBoxLayout()

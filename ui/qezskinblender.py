@@ -4,6 +4,7 @@ import webbrowser
 from Qt import QtCore, QtWidgets, QtGui, QtCompat
 from dcc import fnscene, fnnode, fnmesh, fnskin, fnnotify
 from dcc.ui import qsingletonwindow, qdropdownbutton, qpersistentmenu
+from dcc.math import skinmath
 from .dialogs import qeditinfluencesdialog, qloadweightsdialog
 from .models import qinfluenceitemfiltermodel
 from .views import qinfluenceview
@@ -127,6 +128,7 @@ class QEzSkinBlender(qsingletonwindow.QSingletonWindow):
         #
         self.fileMenu = mainMenuBar.addMenu('&File')
         self.fileMenu.setObjectName('fileMenu')
+        self.fileMenu.setTearOffEnabled(True)
 
         self.saveWeightsAction = QtWidgets.QAction('Save Weights', parent=self.fileMenu)
         self.saveWeightsAction.setObjectName('saveWeightsAction')
@@ -142,6 +144,7 @@ class QEzSkinBlender(qsingletonwindow.QSingletonWindow):
         #
         self.editMenu = mainMenuBar.addMenu('&Edit')
         self.editMenu.setObjectName('editMenu')
+        self.editMenu.setTearOffEnabled(True)
 
         self.copyWeightsAction = QtWidgets.QAction('Copy Weights', parent=self.editMenu)
         self.copyWeightsAction.setObjectName('copyWeightsAction')
@@ -201,6 +204,7 @@ class QEzSkinBlender(qsingletonwindow.QSingletonWindow):
         #
         self.settingsMenu = mainMenuBar.addMenu('&Settings')
         self.settingsMenu.setObjectName('settingsMenu')
+        self.settingsMenu.setTearOffEnabled(True)
 
         self.mirrorAxisSection = QtWidgets.QAction('Mirror Axis:', parent=self.settingsMenu)
         self.mirrorAxisSection.setObjectName('mirrorAxisSection')
@@ -240,6 +244,7 @@ class QEzSkinBlender(qsingletonwindow.QSingletonWindow):
         #
         self.debugMenu = mainMenuBar.addMenu('&Debug')
         self.debugMenu.setObjectName('debugMenu')
+        self.debugMenu.setTearOffEnabled(True)
 
         self.resetActiveSelectionAction = QtWidgets.QAction('Reset Active Selection', parent=self.debugMenu)
         self.resetActiveSelectionAction.setObjectName('resetActiveSelectionAction')
@@ -251,6 +256,7 @@ class QEzSkinBlender(qsingletonwindow.QSingletonWindow):
         #
         self.helpMenu = mainMenuBar.addMenu('&Help')
         self.helpMenu.setObjectName('helpMenu')
+        self.helpMenu.setTearOffEnabled(True)
 
         self.usingEzSkinBlenderAction = QtWidgets.QAction("Using Ez'Skin-Blender", parent=self.helpMenu)
         self.usingEzSkinBlenderAction.setObjectName('usingEzSkinBlenderAction')
@@ -330,6 +336,7 @@ class QEzSkinBlender(qsingletonwindow.QSingletonWindow):
         self.influenceTable.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.influenceTable.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
         self.influenceTable.setStyleSheet('QTableView::item { height: 24; text-align: center; }')
+        self.influenceTable.setShowGrid(True)
         self.influenceTable.setAlternatingRowColors(True)
         self.influenceTable.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
         self.influenceTable.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
@@ -413,6 +420,7 @@ class QEzSkinBlender(qsingletonwindow.QSingletonWindow):
         self.weightTable.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.weightTable.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
         self.weightTable.setStyleSheet('QTableView::item { height: 24; text-align: center; }')
+        self.weightTable.setShowGrid(True)
         self.weightTable.setAlternatingRowColors(True)
         self.weightTable.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
         self.weightTable.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
@@ -438,7 +446,7 @@ class QEzSkinBlender(qsingletonwindow.QSingletonWindow):
 
         horizontalHeader = self.weightTable.horizontalHeader()  # type: QtWidgets.QHeaderView
         horizontalHeader.setStretchLastSection(False)
-        horizontalHeader.resizeSection(1, 100)
+        horizontalHeader.resizeSection(1, 80)
         horizontalHeader.setSectionResizeMode(1, QtWidgets.QHeaderView.Fixed)
         horizontalHeader.setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
         horizontalHeader.setVisible(True)
@@ -1259,17 +1267,19 @@ class QEzSkinBlender(qsingletonwindow.QSingletonWindow):
         currentInfluence = self.currentInfluence()
         sourceInfluences = self.sourceInfluences()
         vertexWeights = self.vertexWeights()
+        maxInfluences = self.skin.maxInfluences()
 
         updates = {}
 
         for (vertexIndex, falloff) in self._softSelection.items():
 
-            updates[vertexIndex] = self.skin.setWeights(
+            updates[vertexIndex] = skinmath.setWeights(
                 vertexWeights[vertexIndex],
                 currentInfluence,
                 sourceInfluences,
                 amount,
-                falloff=falloff
+                falloff=falloff,
+                maxInfluences=maxInfluences
             )
 
         # Assign updates to skin
@@ -1291,17 +1301,19 @@ class QEzSkinBlender(qsingletonwindow.QSingletonWindow):
         currentInfluence = self.currentInfluence()
         sourceInfluences = self.sourceInfluences()
         vertexWeights = self.vertexWeights()
+        maxInfluences = self.skin.maxInfluences()
 
         updates = {}
 
         for (vertexIndex, falloff) in self._softSelection.items():
 
-            updates[vertexIndex] = self.skin.incrementWeights(
+            updates[vertexIndex] = skinmath.incrementWeights(
                 vertexWeights[vertexIndex],
                 currentInfluence,
                 sourceInfluences,
                 amount,
-                falloff=falloff
+                falloff=falloff,
+                maxInfluences=maxInfluences
             )
 
         # Assign updates to skin
@@ -1323,17 +1335,19 @@ class QEzSkinBlender(qsingletonwindow.QSingletonWindow):
         currentInfluence = self.currentInfluence()
         sourceInfluences = self.sourceInfluences()
         vertexWeights = self.vertexWeights()
+        maxInfluences = self.skin.maxInfluences()
 
         updates = {}
 
         for (vertexIndex, falloff) in self._softSelection.items():
 
-            updates[vertexIndex] = self.skin.scaleWeights(
+            updates[vertexIndex] = skinmath.scaleWeights(
                 vertexWeights[vertexIndex],
                 currentInfluence,
                 sourceInfluences,
                 amount,
-                falloff=falloff
+                falloff=falloff,
+                maxInfluences=maxInfluences
             )
 
         # Assign updates to skin
@@ -1623,7 +1637,7 @@ class QEzSkinBlender(qsingletonwindow.QSingletonWindow):
 
         if len(self._vertexWeights) > 0:
 
-            self._weights = self.skin.averageWeights(*list(self._vertexWeights.values()))
+            self._weights = skinmath.averageWeights(*list(self._vertexWeights.values()))
 
         else:
 
@@ -2248,28 +2262,11 @@ class QEzSkinBlender(qsingletonwindow.QSingletonWindow):
         :rtype: None
         """
 
-        # Iterate through selection
-        #
-        currentInfluence = self.currentInfluence()
-        sourceInfluences = self.sourceInfluences()
-        vertexWeights = self.vertexWeights()
+        modifiers = QtWidgets.QApplication.keyboardModifiers()
+        sign = -1.0 if (modifiers == QtCore.Qt.ShiftModifier) else 1.0
+        percent = self.__percent_presets__[index] * sign
 
-        updates = {}
-
-        for (vertexIndex, falloff) in self._softSelection.items():
-
-            updates[vertexIndex] = self.skin.scaleWeights(
-                vertexWeights[vertexIndex],
-                currentInfluence,
-                sourceInfluences,
-                self.__percent_presets__[index],
-                falloff=falloff
-            )
-
-        # Assign updates to skin
-        #
-        self.skin.applyVertexWeights(updates)
-        self.invalidateWeights()
+        self.scaleWeights(percent)
 
     @QtCore.Slot()
     def on_setWeightPushButton_clicked(self):

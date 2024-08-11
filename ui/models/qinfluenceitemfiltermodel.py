@@ -135,10 +135,9 @@ class QInfluenceItemFilterModel(QtCore.QSortFilterProxyModel):
         #
         sourceModel = self.sourceModel()
         columnCount = sourceModel.columnCount()
-
         indices = [sourceModel.index(row, column, parent=parent) for column in range(columnCount)]
-        items = [sourceModel.itemFromIndex(index) for index in indices]
-        isNull = any(self.isNullOrEmpty(item.text()) for item in items)
+
+        isNull = any(self.isNullOrEmpty(sourceModel.itemFromIndex(index).text()) for index in indices)
 
         # Call parent method
         # This will evaluate any regex expressions
@@ -146,21 +145,21 @@ class QInfluenceItemFilterModel(QtCore.QSortFilterProxyModel):
         acceptsRow = super(QInfluenceItemFilterModel, self).filterAcceptsRow(row, parent)
         selectedRows = self.parent().selectedRows()
 
-        if (acceptsRow and not isNull) or row in selectedRows:
+        if (acceptsRow and not isNull) or (row in selectedRows):
 
-            log.debug('Accepting row: %s' % (row,))
+            log.debug(f'Accepting row: {row}')
             return True
 
         elif row in self._overrides:
 
-            log.debug('Overriding row: %s' % (row,))
+            log.debug(f'Overriding row: {row}')
             self._overrides.remove(row)
 
             return True
 
         elif isNull:
 
-            return not isNull
+            return False
 
         else:
 

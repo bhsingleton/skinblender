@@ -117,6 +117,11 @@ class QEzSkinBlender(qsingletonwindow.QSingletonWindow):
         #
         super(QEzSkinBlender, self).__setup_ui__(*args, **kwargs)
 
+        # Initialize main window
+        #
+        self.setWindowTitle("|| Ez'Skin-Blender")
+        self.setMinimumSize(QtCore.QSize(450, 450))
+
         # Initialize main menu-bar
         #
         mainMenuBar = QtWidgets.QMenuBar()
@@ -264,11 +269,6 @@ class QEzSkinBlender(qsingletonwindow.QSingletonWindow):
 
         self.helpMenu.addAction(self.usingEzSkinBlenderAction)
 
-        # Initialize main window
-        #
-        self.setWindowTitle("|| Ez'Skin-Blender")
-        self.setMinimumSize(QtCore.QSize(450, 450))
-
         # Initialize central widget
         #
         centralLayout = QtWidgets.QVBoxLayout()
@@ -312,6 +312,7 @@ class QEzSkinBlender(qsingletonwindow.QSingletonWindow):
         self.influenceWidget = QtWidgets.QWidget()
         self.influenceWidget.setObjectName('influenceWidget')
         self.influenceWidget.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding))
+        self.influenceWidget.setMinimumWidth(100)
         self.influenceWidget.setLayout(self.influenceLayout)
         self.influenceWidget.setEnabled(False)
 
@@ -333,14 +334,14 @@ class QEzSkinBlender(qsingletonwindow.QSingletonWindow):
         self.influenceTable = qinfluenceview.QInfluenceView()
         self.influenceTable.setObjectName('influenceTable')
         self.influenceTable.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding))
+        self.influenceTable.setFocusPolicy(QtCore.Qt.ClickFocus)
+        self.influenceTable.setStyleSheet('QTableView::item { height: 24; text-align: center; }')
         self.influenceTable.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.influenceTable.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
-        self.influenceTable.setStyleSheet('QTableView::item { height: 24; text-align: center; }')
-        self.influenceTable.setShowGrid(True)
         self.influenceTable.setAlternatingRowColors(True)
+        self.influenceTable.setShowGrid(True)
         self.influenceTable.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
         self.influenceTable.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
-        self.influenceTable.setFocusPolicy(QtCore.Qt.ClickFocus)
         self.influenceTable.clicked.connect(self.on_influenceTable_clicked)
         self.influenceTable.highlighted.connect(self.on_influenceTable_highlighted)
 
@@ -405,6 +406,7 @@ class QEzSkinBlender(qsingletonwindow.QSingletonWindow):
         self.weightWidget = QtWidgets.QWidget()
         self.weightWidget.setObjectName('weightWidget')
         self.weightWidget.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding))
+        self.weightWidget.setMinimumWidth(100)
         self.weightWidget.setLayout(self.weightLayout)
         self.weightWidget.setEnabled(False)
 
@@ -417,14 +419,15 @@ class QEzSkinBlender(qsingletonwindow.QSingletonWindow):
         self.weightTable = qinfluenceview.QInfluenceView()
         self.weightTable.setObjectName('weightTable')
         self.weightTable.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding))
+        self.weightTable.setFocusPolicy(QtCore.Qt.ClickFocus)
+        self.weightTable.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.weightTable.setStyleSheet('QTableView::item { height: 24; text-align: center; }')
         self.weightTable.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.weightTable.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
-        self.weightTable.setStyleSheet('QTableView::item { height: 24; text-align: center; }')
-        self.weightTable.setShowGrid(True)
         self.weightTable.setAlternatingRowColors(True)
+        self.weightTable.setShowGrid(True)
         self.weightTable.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
         self.weightTable.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
-        self.weightTable.setFocusPolicy(QtCore.Qt.ClickFocus)
         self.weightTable.clicked.connect(self.on_weightTable_clicked)
         self.weightTable.doubleClicked.connect(self.on_weightTable_doubleClicked)
         self.weightTable.customContextMenuRequested.connect(self.on_weightTable_customContextMenuRequested)

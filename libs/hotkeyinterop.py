@@ -127,6 +127,32 @@ def setWeights(amount, window=None):
 
 
 @uiAccessor
+def incrementWeights(window=None):
+    """
+    Calls the increment weights button from the main window.
+
+    :type window: qezskinblender.QEzSkinBlender
+    :rtype: None
+    """
+
+    amount = window.incrementWeightSpinBox.value()
+    window.incrementWeights(amount)
+
+
+@uiAccessor
+def decrementWeights(window=None):
+    """
+    Calls the decrement weights button from the main window.
+
+    :type window: qezskinblender.QEzSkinBlender
+    :rtype: None
+    """
+
+    amount = window.incrementWeightSpinBox.value()
+    window.incrementWeights(-amount)
+
+
+@uiAccessor
 def pruneWeights(window=None):
     """
     Calls the prune vertices action from the main window.

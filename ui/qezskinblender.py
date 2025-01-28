@@ -96,6 +96,7 @@ class QEzSkinBlender(qsingletonwindow.QSingletonWindow):
         #
         self._scene = fnscene.FnScene()
         self._skin = fnskin.FnSkin()
+        self._mesh = fnmesh.FnMesh()
         self._currentInfluence = None
         self._softSelection = {}
         self._selection = []
@@ -865,6 +866,16 @@ class QEzSkinBlender(qsingletonwindow.QSingletonWindow):
         """
 
         return self._skin
+
+    @property
+    def mesh(self):
+        """
+        Getter method that returns the mesh function set.
+
+        :rtype: fnmesh.FnMesh
+        """
+
+        return self._mesh
 
     @property
     def precision(self):
@@ -1727,6 +1738,11 @@ class QEzSkinBlender(qsingletonwindow.QSingletonWindow):
                 sender.setChecked(False)
                 return
 
+            # Edit button text
+            #
+            self.mesh.setObject(self.skin.shape())
+            sender.setText(f'Editing {self.mesh.name()}')
+
             # Display vertex colors
             #
             self.skin.showColors()
@@ -1745,6 +1761,11 @@ class QEzSkinBlender(qsingletonwindow.QSingletonWindow):
 
                 self.skin.hideColors()
                 self.skin.resetObject()
+
+            # Reset button text
+            #
+            self.mesh.resetObject()
+            sender.setText('Edit Envelope')
 
             # Reset item models
             #

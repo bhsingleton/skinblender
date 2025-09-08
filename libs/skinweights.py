@@ -30,17 +30,17 @@ class SkinWeights(psonobject.PSONObject):
         :rtype: None
         """
 
-        # Declare private variables
-        #
-        self._name = kwargs.get('name', '')
-        self._influences = kwargs.get('influences', {})
-        self._maxInfluences = kwargs.get('maxInfluences', 4)
-        self._weights = kwargs.get('weights', [])
-        self._points = kwargs.get('points', [])
-
         # Call parent method
         #
         super(SkinWeights, self).__init__(*args, **kwargs)
+
+        # Declare private variables
+        #
+        self._name = ''
+        self._influences = {}
+        self._maxInfluences = 4
+        self._weights = []
+        self._points = []
     # endregion
 
     # region Properties

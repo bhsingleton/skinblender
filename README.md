@@ -11,9 +11,7 @@ Make sure you have pip installed using:
 > mayapy.exe -m ensurepip --upgrade --user  
 
 Now you can install the necessary dependencies using:  
-> mayapy.exe -m pip install six --user  
-
-Be sure to repeat this for: six, Qt.py and scipy.  
+> mayapy.exe -m pip install scipy --user  
 
 ## Usage
 Once you've downloaded ezskinblender, move the folder into one of the Maya script directories.  

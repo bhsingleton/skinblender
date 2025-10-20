@@ -120,7 +120,7 @@ class QSkinBlender(qsingletonwindow.QSingletonWindow):
 
         # Initialize main window
         #
-        self.setWindowTitle("|| Ez'Skin-Blender")
+        self.setWindowTitle("|| Skin Blender")
         self.setMinimumSize(QtCore.QSize(450, 450))
 
         # Initialize main menu-bar

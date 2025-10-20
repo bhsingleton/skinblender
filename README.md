@@ -1,5 +1,5 @@
-# Ez Skin Blender
-A DCC-agnostic selection-based skin weighting tool.  
+# Skin Blender
+A DCC-agnostic vertex selection based skin weighting tool.  
 
 ## Installing the PIP Dependencies
 To install the required pip dependencies open a Command Prompt window.  
@@ -14,21 +14,21 @@ Now you can install the necessary dependencies using:
 > mayapy.exe -m pip install scipy --user  
 
 ## Usage
-Once you've downloaded ezskinblender, move the folder into one of the Maya script directories.  
+Once you've downloaded skinblender, move the folder into one of the Maya script directories.  
 You will also need to repeat this process for the dcc package: https://github.com/bhsingleton/dcc/  
 Once you're done you can launch the tool with the following command:  
   
-> from ezskinblender.ui import qezskinblender;  
-> window = qezskinblender.QEzSkinBlender();  
+> from skinblender.ui import qskinblender;  
+> window = qskinblender.QSkinBlender();  
 > window.show();  
   
 ## Hotkeys
 Creating hotkeys is super easy.  
-QVertexBlender is derived from QProxyWindow which uses a singleton pattern for instances.  
-An example of a hotkey can be as simple as:  
+`QSkinBlender` is derived from `QProxyWindow` which uses a singleton pattern for instancing.  
+So an example of a hotkey can be as simple as:  
   
-> from ezskinblender.ui import qezskinblender;  
-> window = qezskinblender.QEzSkinBlender.getInstance();  
+> from skinblender.ui import qskinblender;  
+> window = qskinblender.QSkinBlender.getInstance();  
 > window.blendVertices();  
   
 ## Maya Interface

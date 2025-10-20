@@ -3,9 +3,9 @@ A DCC-agnostic vertex selection based skin weighting tool.
 
 ## Installing the PIP Dependencies
 To install the required pip dependencies open a Command Prompt window.  
-In this example I will be using Maya 2022. Be sure to adjust your code to whichever version of Maya you are using.  
+In this example I will be using Maya 2025. Be sure to adjust your code to whichever version of Maya you are using.  
 Change the current working directory using:  
-> cd %PROGRAMFILES%\Autodesk\Maya2022\bin  
+> cd %PROGRAMFILES%\Autodesk\Maya2025\bin  
 
 Make sure you have pip installed using:  
 > mayapy.exe -m ensurepip --upgrade --user  
@@ -14,8 +14,8 @@ Now you can install the necessary dependencies using:
 > mayapy.exe -m pip install scipy --user  
 
 ## Usage
-Once you've downloaded skinblender, move the folder into one of the Maya script directories.  
-You will also need to repeat this process for the dcc package: https://github.com/bhsingleton/dcc/  
+Once you've downloaded `skinblender`, move the folder into one of the Maya script directories.  
+You will also need to repeat this process for the `dcc` package: https://github.com/bhsingleton/dcc/  
 Once you're done you can launch the tool with the following command:  
   
 > from skinblender.ui import qskinblender;  
@@ -24,7 +24,7 @@ Once you're done you can launch the tool with the following command:
   
 ## Hotkeys
 Creating hotkeys is super easy.  
-`QSkinBlender` is derived from `QProxyWindow` which uses a singleton pattern for instancing.  
+The main window `QSkinBlender` is derived from `QProxyWindow` which uses a singleton pattern for instancing.  
 So an example of a hotkey can be as simple as:  
   
 > from skinblender.ui import qskinblender;  

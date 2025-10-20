@@ -1,4 +1,4 @@
-from ..ui import qezskinblender
+from ..ui import qskinblender
 
 import logging
 logging.basicConfig()
@@ -21,7 +21,7 @@ def uiAccessor(func):
 
         # Check if window exists
         #
-        window = qezskinblender.QEzSkinBlender.getInstance()
+        window = qskinblender.QSkinBlender.getInstance()
 
         if window is not None:
 
@@ -29,6 +29,6 @@ def uiAccessor(func):
 
         else:
 
-            log.warning("Cannot locate Ez'Skin-Blender window!")
+            log.warning("Cannot locate Skin-Blender window!")
 
     return wrapper

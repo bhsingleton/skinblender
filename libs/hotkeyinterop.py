@@ -1,5 +1,5 @@
 from Qt import QtCore
-from ..ui import qezskinblender
+from ..ui import qskinblender
 from ..decorators.uiaccessor import uiAccessor
 
 import logging
@@ -15,16 +15,16 @@ def showWindow():
     :rtype: None
     """
 
-    hasInstance = qezskinblender.QEzSkinBlender.hasInstance()
+    hasInstance = qskinblender.QSkinBlender.hasInstance()
 
     if not hasInstance:
 
-        window = qezskinblender.QEzSkinBlender()
+        window = qskinblender.QSkinBlender()
         window.show()
 
     else:
 
-        window = qezskinblender.QEzSkinBlender.getInstance()
+        window = qskinblender.QSkinBlender.getInstance()
         window.setFocus(QtCore.Qt.ActiveWindowFocusReason)
 
 
@@ -33,7 +33,7 @@ def togglePrecision(window=None):
     """
     Toggles precision mode on the main window.
 
-    :type window: qezskinblender.QEzSkinBlender
+    :type window: qskinblender.QSkinBlender
     :rtype: None
     """
 
@@ -45,7 +45,7 @@ def copyWeights(window=None):
     """
     Calls the copy weights action from the main window.
 
-    :type window: qezskinblender.QEzSkinBlender
+    :type window: qskinblender.QSkinBlender
     :rtype: None
     """
 
@@ -58,7 +58,7 @@ def pasteWeights(average=False, window=None):
     Calls the paste weights action from the main window.
 
     :type average: bool
-    :type window: qezskinblender.QEzSkinBlender
+    :type window: qskinblender.QSkinBlender
     :rtype: None
     """
 
@@ -70,7 +70,7 @@ def pruneWeights(window=None):
     """
     Calls the prune vertices action from the main window.
 
-    :type window: qezskinblender.QEzSkinBlender
+    :type window: qskinblender.QSkinBlender
     :rtype: None
     """
 
@@ -82,7 +82,7 @@ def relaxVertices(window=None):
     """
     Calls the relax vertices action from the main window.
 
-    :type window: qezskinblender.QEzSkinBlender
+    :type window: qskinblender.QSkinBlender
     :rtype: None
     """
 
@@ -94,7 +94,7 @@ def blendVertices(window=None):
     """
     Calls the blend vertices action from the main window.
 
-    :type window: qezskinblender.QEzSkinBlender
+    :type window: qskinblender.QSkinBlender
     :rtype: None
     """
 
@@ -106,7 +106,7 @@ def blendBetweenVertices(window=None):
     """
     Calls the blend between vertices action from the main window.
 
-    :type window: qezskinblender.QEzSkinBlender
+    :type window: qskinblender.QSkinBlender
     :rtype: None
     """
 
@@ -119,7 +119,7 @@ def setWeights(amount, window=None):
     Calls the set vertices action from the main window.
 
     :type amount: float
-    :type window: qezskinblender.QEzSkinBlender
+    :type window: qskinblender.QSkinBlender
     :rtype: None
     """
 
@@ -131,7 +131,7 @@ def incrementWeights(window=None):
     """
     Calls the increment weights button from the main window.
 
-    :type window: qezskinblender.QEzSkinBlender
+    :type window: qskinblender.QSkinBlender
     :rtype: None
     """
 
@@ -144,7 +144,7 @@ def decrementWeights(window=None):
     """
     Calls the decrement weights button from the main window.
 
-    :type window: qezskinblender.QEzSkinBlender
+    :type window: qskinblender.QSkinBlender
     :rtype: None
     """
 
@@ -157,7 +157,7 @@ def pruneWeights(window=None):
     """
     Calls the prune vertices action from the main window.
 
-    :type window: qezskinblender.QEzSkinBlender
+    :type window: qskinblender.QSkinBlender
     :rtype: None
     """
 

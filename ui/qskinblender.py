@@ -26,7 +26,7 @@ def onActiveSelectionChanged(*args, **kwargs):
 
     # Check if instance exists
     #
-    instance = QEzSkinBlender.getInstance()
+    instance = QSkinBlender.getInstance()
 
     if instance is None:
 
@@ -52,7 +52,7 @@ def onUndoBufferChanged(*args, **kwargs):
 
     # Check if instance exists
     #
-    instance = QEzSkinBlender.getInstance()
+    instance = QSkinBlender.getInstance()
 
     if instance is None:
 
@@ -69,7 +69,7 @@ def onUndoBufferChanged(*args, **kwargs):
         log.warning('Unable to process undo callback!')
 
 
-class QEzSkinBlender(qsingletonwindow.QSingletonWindow):
+class QSkinBlender(qsingletonwindow.QSingletonWindow):
     """
     Overload of `QSingletonWindow` that manipulates skin weights.
     """
@@ -90,7 +90,7 @@ class QEzSkinBlender(qsingletonwindow.QSingletonWindow):
 
         # Call parent method
         #
-        super(QEzSkinBlender, self).__init__(*args, **kwargs)
+        super(QSkinBlender, self).__init__(*args, **kwargs)
 
         # Declare private variables
         #
@@ -116,7 +116,7 @@ class QEzSkinBlender(qsingletonwindow.QSingletonWindow):
 
         # Call parent method
         #
-        super(QEzSkinBlender, self).__setup_ui__(*args, **kwargs)
+        super(QSkinBlender, self).__setup_ui__(*args, **kwargs)
 
         # Initialize main window
         #
@@ -1107,7 +1107,7 @@ class QEzSkinBlender(qsingletonwindow.QSingletonWindow):
 
         # Call parent method
         #
-        super(QEzSkinBlender, self).saveSettings(settings)
+        super(QSkinBlender, self).saveSettings(settings)
 
         # Save user settings
         #
@@ -1127,7 +1127,7 @@ class QEzSkinBlender(qsingletonwindow.QSingletonWindow):
 
         # Call parent method
         #
-        super(QEzSkinBlender, self).loadSettings(settings)
+        super(QSkinBlender, self).loadSettings(settings)
 
         # Load user settings
         #

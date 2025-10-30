@@ -1903,8 +1903,8 @@ class QSkinBlender(qsingletonwindow.QSingletonWindow):
         #
         if os.path.exists(filePath):
 
-            log.info('Loading weights from: %s' % filePath)
-            qloadweightsdialog.loadWeights(selection[0], filePath, parent=self)
+            log.info(f'Loading weights from: {filePath}')
+            qloadweightsdialog.QLoadWeightsDialog.loadWeights(selection[0], filePath, parent=self)
 
         else:
 

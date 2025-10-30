@@ -1,8 +1,10 @@
-from Qt import QtCore, QtWidgets, QtGui
-from six import string_types
+import os
+
 from itertools import chain
-from dcc import fnskin, fnnode
+from dcc import fnskin, fnmesh
 from dcc.ui.dialogs import qmaindialog
+from dcc.vendor.six import string_types
+from dcc.vendor.Qt import QtCore, QtWidgets, QtGui
 from ...libs import skinweights, skinutils
 
 import logging
@@ -32,6 +34,7 @@ class QLoadWeightsDialog(qmaindialog.QMainDialog):
 
         # Declare private variables
         #
+        self._mesh = fnmesh.FnMesh()
         self._skin = fnskin.FnSkin()
         self._skinWeights = None
 
@@ -173,6 +176,28 @@ class QLoadWeightsDialog(qmaindialog.QMainDialog):
 
     # region Properties
     @property
+    def mesh(self):
+        """
+        Getter method that returns the mesh.
+
+        :rtype: fnmesh.FnMesh
+        """
+
+        return self._mesh
+
+    @mesh.setter
+    def mesh(self, mesh):
+        """
+        Setter method that updates the mesh.
+
+        :type mesh: Any
+        :rtype: None
+        """
+
+        self._mesh.trySetObject(mesh)
+        self._skin.trySetObject(mesh)
+
+    @property
     def skin(self):
         """
         Getter method that returns the skin.
@@ -181,18 +206,6 @@ class QLoadWeightsDialog(qmaindialog.QMainDialog):
         """
 
         return self._skin
-
-    @skin.setter
-    def skin(self, skin):
-        """
-        Setter method that updates the skin.
-
-        :type skin: Any
-        :rtype: None
-        """
-
-        self._skin.trySetObject(skin)
-        self.invalidate()
 
     @property
     def skinWeights(self):
@@ -214,7 +227,6 @@ class QLoadWeightsDialog(qmaindialog.QMainDialog):
         """
 
         self._skinWeights = skinWeights
-        self.invalidate()
     # endregion
 
     # region Events
@@ -238,6 +250,88 @@ class QLoadWeightsDialog(qmaindialog.QMainDialog):
     # endregion
 
     # region Methods
+    @classmethod
+    def loadWeights(cls, mesh, filePath, parent=None):
+        """
+        Loads the skin weights from the specified file onto the supplied skin.
+
+        :type mesh: Union[om.MObject, pymxs.runtime.MXSWrapperBase]
+        :type filePath: str
+        :type parent: QtWidgets.QWidget
+        :rtype: bool
+        """
+
+        # Check if file exists
+        #
+        exists = os.path.exists(filePath) if isinstance(filePath, string_types) else False
+
+        if not exists:
+
+            log.warning(f'Unable to locate file: {filePath}')
+            return False
+
+        # Initialize dialog and evaluate mesh
+        #
+        skinWeights = skinutils.importSkin(filePath)
+        dialog = cls(mesh=mesh, skinWeights=skinWeights, parent=parent)
+
+        meshExists = dialog.mesh.isValid()
+
+        if not meshExists:
+
+            log.warning(f'Unable to load weights onto supplied mesh!')
+            return False
+
+        # Check if mesh has a skin
+        #
+        skinExists = dialog.ensureSkin()
+
+        if skinExists:
+
+            return bool(dialog.exec_())
+
+        else:
+
+            log.warning('Unable to load weights onto supplied mesh!')
+            return False
+
+    def ensureSkin(self):
+        """
+        Ensures the current mesh has a skin deformer.
+
+        :rtype: bool
+        """
+
+        # Check if skin is already valid
+        #
+        if self._skin.isValid():
+
+            return True
+
+        # Check if skin weights exist
+        #
+        if not isinstance(self.skinWeights, skinweights.SkinWeights):
+
+            return False
+
+        # Check if all influences exist
+        #
+        influenceNames = list(self.skinWeights.influences.values())
+        influenceCount = len(influenceNames)
+
+        exist = all(self.mesh.doesNodeExist(influenceName) for influenceName in influenceNames) and influenceCount > 0
+
+        if not exist:
+
+            return False
+
+        # Create new skin and add influences
+        #
+        self._skin = self.skin.create(self.mesh.object())
+        self._skin.addInfluence(*influenceNames)
+
+        return True
+
     def matchInfluences(self):
         """
         Matches the incoming influences with the current influences.
@@ -316,9 +410,13 @@ class QLoadWeightsDialog(qmaindialog.QMainDialog):
         :rtype: None
         """
 
-        # Check if skin and weights are valid
+        # Check skin weights are valid
         #
-        if not (self.skin.isValid() and self.skinWeights is not None):
+        meshExists = self.mesh.isValid()
+        skinExists = self.skin.isValid()
+        skinWeightsExist = isinstance(self.skinWeights, skinweights.SkinWeights)
+
+        if not (meshExists and skinExists and skinWeightsExist):
 
             return
 
@@ -327,6 +425,7 @@ class QLoadWeightsDialog(qmaindialog.QMainDialog):
         maxInfluenceId = max(self.skinWeights.influences.keys())
         rowCount = maxInfluenceId + 1
 
+        self.influenceTableWidget.clearContents()
         self.influenceTableWidget.setRowCount(rowCount)
         self.influenceTableWidget.setVerticalHeaderLabels(list(map(str, range(rowCount))))
 
@@ -369,6 +468,21 @@ class QLoadWeightsDialog(qmaindialog.QMainDialog):
         # Try and match influences by name
         #
         self.matchInfluences()
+
+    def exec_(self):
+        """
+        Shows the dialog as a modal dialog, blocking until the user closes it.
+
+        :rtype: QtWidgets.QDialog.DialogCode
+        """
+
+        # Invalidate user interface
+        #
+        self.invalidate()
+
+        # Call parent method
+        #
+        return super(QLoadWeightsDialog, self).exec_()
     # endregion
 
     # region Slots
@@ -379,10 +493,6 @@ class QLoadWeightsDialog(qmaindialog.QMainDialog):
 
         :rtype: None
         """
-
-        # Call parent method
-        #
-        super(QLoadWeightsDialog, self).accept()
 
         # Check which load operation to perform
         #
@@ -399,7 +509,11 @@ class QLoadWeightsDialog(qmaindialog.QMainDialog):
 
         else:
 
-            raise RuntimeError('accept() expects a valid method (%s given)!' % method)
+            log.debug(f'Unable to process selected method: {method}')
+
+        # Call parent method
+        #
+        super(QLoadWeightsDialog, self).accept()
 
     @QtCore.Slot()
     def on_matchPushButton_clicked(self):
@@ -411,33 +525,3 @@ class QLoadWeightsDialog(qmaindialog.QMainDialog):
 
         self.matchInfluences()
     # endregion
-
-
-def loadWeights(skin, filePath, parent=None):
-    """
-    Loads the skin weights from the specified file onto the supplied skin.
-
-    :type skin: Union[om.MObject, pymxs.runtime.MXSWrapperBase]
-    :type filePath: str
-    :type parent: QtWidgets.QWidget
-    :rtype: None
-    """
-
-    # Check path type
-    #
-    if not isinstance(filePath, string_types):
-
-        raise TypeError('loadSkinWeights() expects a valid file path (%s given)!' % type(filePath).__name__)
-
-    # Initialize dialog from skin
-    #
-    skinWeights = skinutils.importSkin(filePath)
-    dialog = QLoadWeightsDialog(skin=skin, skinWeights=skinWeights, parent=parent)
-
-    if dialog.skin.isValid():
-
-        dialog.exec_()
-
-    else:
-
-        raise TypeError('loadSkinWeights() expects a valid skin (%s given)!' % type(skin).__name__)

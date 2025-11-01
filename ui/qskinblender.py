@@ -1,8 +1,8 @@
 import os
 import webbrowser
 
-from Qt import QtCore, QtWidgets, QtGui, QtCompat
 from dcc import fnscene, fnnode, fnmesh, fnskin, fnnotify
+from dcc.vendor.Qt import QtCore, QtWidgets, QtGui, QtCompat
 from dcc.ui import qsingletonwindow, qdropdownbutton, qpersistentmenu
 from dcc.math import skinmath
 from .dialogs import qeditinfluencesdialog, qloadweightsdialog

@@ -1,4 +1,4 @@
-from Qt import QtCore
+from dcc.vendor.Qt import QtCore
 from ..ui import qskinblender
 from ..decorators.uiaccessor import uiAccessor
 

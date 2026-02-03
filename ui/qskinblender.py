@@ -1883,32 +1883,81 @@ class QSkinBlender(qsingletonwindow.QSingletonWindow):
         selection = self.scene.getActiveSelection()
         selectionCount = len(selection)
 
-        if selectionCount != 1:
+        node = fnnode.FnNode()
+
+        if selectionCount == 0:
 
             log.warning('Invalid selection!')
             return
 
-        # Prompt user for file path
-        #
-        defaultDirectory = self.scene.currentDirectory()
+        elif selectionCount == 1:
 
-        filePath, selectedFilter = QtWidgets.QFileDialog.getOpenFileName(
-            self,
-            'Load Weights',
-            defaultDirectory,
-            r'All JSON Files (*.json)'
-        )
+            # Prompt user for file path
+            #
+            defaultDirectory = self.scene.currentDirectory()
 
-        # Check if a file was specified
-        #
-        if os.path.exists(filePath):
+            filePath, selectedFilter = QtWidgets.QFileDialog.getOpenFileName(
+                self,
+                'Load Weights',
+                defaultDirectory,
+                r'All JSON Files (*.json)'
+            )
 
-            log.info(f'Loading weights from: {filePath}')
-            qloadweightsdialog.QLoadWeightsDialog.loadWeights(selection[0], filePath, parent=self)
+            # Check if file exists
+            #
+            if os.path.exists(filePath):
+
+                log.info(f'Loading weights from: {filePath}')
+                qloadweightsdialog.QLoadWeightsDialog.loadWeights(selection[0], filePath, parent=self)
+
+            else:
+
+                log.info('Operation aborted...')
 
         else:
 
-            log.info('Operation aborted...')
+            # Prompt user for directory
+            #
+            defaultDirectory = self.scene.currentDirectory()
+
+            directory = QtWidgets.QFileDialog.getExistingDirectory(
+                self,
+                'Load Skin Weights',
+                defaultDirectory,
+                QtWidgets.QFileDialog.ShowDirsOnly
+            )
+
+            if not os.path.exists(directory):
+
+                log.info('Operation aborted...')
+                return
+
+            # Iterate through nodes in selection
+            #
+            for obj in selection:
+
+                # Try and initialize node interface
+                #
+                success = node.trySetObject(obj)
+
+                if not success:
+
+                    continue
+
+                # Check if file exists
+                #
+                filename = f'{node.name()}.json'
+                filePath = os.path.join(directory, filename)
+
+                if not os.path.exists(filePath):
+
+                    log.warning(f'Unable to locate weights: {filePath}')
+                    continue
+
+                # Load skin weights
+                #
+                log.info(f'Loading weights from: {filePath}')
+                qloadweightsdialog.QLoadWeightsDialog.loadWeights(obj, filePath, parent=self)
 
     @QtCore.Slot(bool)
     def on_resetIntermediateObjectAction_triggered(self, checked=False):

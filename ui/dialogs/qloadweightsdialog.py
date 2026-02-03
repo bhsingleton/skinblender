@@ -251,9 +251,31 @@ class QLoadWeightsDialog(qmaindialog.QMainDialog):
 
     # region Methods
     @classmethod
-    def loadWeights(cls, mesh, filePath, parent=None):
+    def isSkeletalMesh(cls, mesh):
         """
-        Loads the skin weights from the specified file onto the supplied skin.
+        Evaluates if the supplied object is a skeletal mesh.
+
+        :type mesh: Union[om.MObject, pymxs.runtime.MXSWrapperBase]
+        :rtype: bool
+        """
+
+        return fnskin.FnSkin().trySetObject(mesh)
+
+    @classmethod
+    def isStaticMesh(cls, mesh):
+        """
+        Evaluates if the supplied object is a static mesh.
+
+        :type mesh: Union[om.MObject, pymxs.runtime.MXSWrapperBase]
+        :rtype: bool
+        """
+
+        return fnmesh.FnMesh().trySetObject(mesh)
+
+    @classmethod
+    def createSkinAndLoadWeights(cls, mesh, filePath, parent=None):
+        """
+        Creates a skin and load the skin weights from the specified file onto the supplied mesh.
 
         :type mesh: Union[om.MObject, pymxs.runtime.MXSWrapperBase]
         :type filePath: str
@@ -270,25 +292,90 @@ class QLoadWeightsDialog(qmaindialog.QMainDialog):
             log.warning(f'Unable to locate file: {filePath}')
             return False
 
-        # Initialize dialog and evaluate mesh
+        # Evaluate supplied mesh
         #
-        skinWeights = skinutils.importSkin(filePath)
-        dialog = cls(mesh=mesh, skinWeights=skinWeights, parent=parent)
+        isSkeletalMesh = cls.isSkeletalMesh(mesh)
+        isStaticMesh = cls.isStaticMesh(mesh)
 
-        meshExists = dialog.mesh.isValid()
+        if isSkeletalMesh:
 
-        if not meshExists:
+            return cls.loadSkinWeights(mesh, filePath, parent=parent)
 
-            log.warning(f'Unable to load weights onto supplied mesh!')
+        elif isStaticMesh:
+
+            # Try and create skin
+            #
+            skinWeights = skinutils.importSkin(filePath)
+
+            dialog = cls(mesh=mesh, skinWeights=skinWeights, parent=parent)
+            success = dialog.ensureSkin()
+
+            if not success:
+
+                return success
+
+            # Evaluate user input
+            #
+            success = bool(dialog.exec_())
+
+            if success:
+
+                return dialog.applyMethod()
+
+            else:
+
+                return success
+
+        else:
+
+            log.warning('Unable to load weights onto supplied mesh!')
             return False
 
-        # Check if mesh has a skin
+    @classmethod
+    def loadWeights(cls, mesh, filePath, parent=None):
+        """
+        Loads the skin weights from the specified file onto the supplied mesh.
+
+        :type mesh: Union[om.MObject, pymxs.runtime.MXSWrapperBase]
+        :type filePath: str
+        :type parent: QtWidgets.QWidget
+        :rtype: bool
+        """
+
+        # Check if file exists
         #
-        skinExists = dialog.ensureSkin()
+        exists = os.path.exists(filePath) if isinstance(filePath, string_types) else False
 
-        if skinExists:
+        if not exists:
 
-            return bool(dialog.exec_())
+            log.warning(f'Unable to locate file: {filePath}')
+            return False
+
+        # Evaluate supplied mesh
+        #
+        isSkeletalMesh = cls.isSkeletalMesh(mesh)
+        isStaticMesh = cls.isStaticMesh(mesh)
+
+        if isSkeletalMesh:
+
+            # Evaluate user input
+            #
+            skinWeights = skinutils.importSkin(filePath)
+
+            dialog = cls(mesh=mesh, skinWeights=skinWeights, parent=parent)
+            success = bool(dialog.exec_())
+
+            if success:
+
+                return dialog.applyMethod()
+
+            else:
+
+                return False
+
+        elif isStaticMesh:
+
+            return cls.createSkinAndLoadWeights(mesh, filePath, parent=parent)
 
         else:
 
@@ -314,14 +401,26 @@ class QLoadWeightsDialog(qmaindialog.QMainDialog):
 
             return False
 
-        # Check if all influences exist
+        # Evaluate influence status
         #
         influenceNames = list(self.skinWeights.influences.values())
         influenceCount = len(influenceNames)
 
-        exist = all(self.mesh.doesNodeExist(influenceName) for influenceName in influenceNames) and influenceCount > 0
+        exists = [None] * influenceCount
 
-        if not exist:
+        for (i, influenceName) in enumerate(influenceNames):
+
+            exist = self.mesh.doesNodeExist(influenceName)
+
+            if not exist:
+
+                log.warning(f'Unable to locate influence: {influenceName}')
+
+            exists[i] = exist
+
+        # Check if all influences exist
+        #
+        if not (all(exists) and influenceCount > 0):
 
             return False
 
@@ -329,6 +428,7 @@ class QLoadWeightsDialog(qmaindialog.QMainDialog):
         #
         self._skin = self.skin.create(self.mesh.object())
         self._skin.addInfluence(*influenceNames)
+        self._skin.setMaxInfluences(self.skinWeights.maxInfluences)
 
         return True
 
@@ -379,6 +479,30 @@ class QLoadWeightsDialog(qmaindialog.QMainDialog):
 
         return self.methodButtonGroup.checkedId()
 
+    def applyMethod(self):
+        """
+        Applies the selected load method to the current skin.
+
+        :rtype: bool
+        """
+
+        # Evaluate selected method
+        #
+        influenceMap = self.influenceMap()
+        method = self.selectedMethod()
+
+        if method == 0:
+
+            return self.skinWeights.applyWeights(self.skin, influenceMap=influenceMap)
+
+        elif method == 1:
+
+            return self.skinWeights.applyClosestWeights(self.skin, influenceMap=influenceMap)
+
+        else:
+
+            return False
+
     def influenceMap(self):
         """
         Returns the user defined influence map.
@@ -414,9 +538,9 @@ class QLoadWeightsDialog(qmaindialog.QMainDialog):
         #
         meshExists = self.mesh.isValid()
         skinExists = self.skin.isValid()
-        skinWeightsExist = isinstance(self.skinWeights, skinweights.SkinWeights)
+        weightsExist = isinstance(self.skinWeights, skinweights.SkinWeights)
 
-        if not (meshExists and skinExists and skinWeightsExist):
+        if not (meshExists and skinExists and weightsExist):
 
             return
 
@@ -486,35 +610,6 @@ class QLoadWeightsDialog(qmaindialog.QMainDialog):
     # endregion
 
     # region Slots
-    @QtCore.Slot()
-    def accept(self):
-        """
-        Slot method for the dialog's `accept` signal.
-
-        :rtype: None
-        """
-
-        # Check which load operation to perform
-        #
-        influenceMap = self.influenceMap()
-        method = self.selectedMethod()
-
-        if method == 0:
-
-            self.skinWeights.applyWeights(self.skin, influenceMap=influenceMap)
-
-        elif method == 1:
-
-            self.skinWeights.applyClosestWeights(self.skin, influenceMap=influenceMap)
-
-        else:
-
-            log.debug(f'Unable to process selected method: {method}')
-
-        # Call parent method
-        #
-        super(QLoadWeightsDialog, self).accept()
-
     @QtCore.Slot()
     def on_matchPushButton_clicked(self):
         """

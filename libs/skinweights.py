@@ -173,7 +173,7 @@ class SkinWeights(psonobject.PSONObject):
 
         :type skin: fnskin.FnSkin
         :type influenceMap: Dict[int, int]
-        :rtype: None
+        :rtype: bool
         """
 
         # Check if an influence map was supplied
@@ -189,7 +189,8 @@ class SkinWeights(psonobject.PSONObject):
 
         if pointCount != incomingCount:
 
-            raise TypeError(f'applyWeights() expects {pointCount} vertices ({incomingCount} given)!')
+            log.warning(f'Mismatch found between vertex counts: {pointCount} != {incomingCount}')
+            return False
 
         # Remap and apply weights
         #
@@ -198,13 +199,15 @@ class SkinWeights(psonobject.PSONObject):
 
         skin.applyVertexWeights(remappedWeights)
 
+        return True
+
     def applyClosestWeights(self, skin, influenceMap=None):
         """
         Applies the closest skin weights to the supplied skin.
 
         :type skin: fnskin.FnSkin
         :type influenceMap: Dict[int, int]
-        :rtype: None
+        :rtype: bool
         """
 
         # Check if an influence map was supplied
@@ -224,6 +227,8 @@ class SkinWeights(psonobject.PSONObject):
         remappedWeights = skin.remapVertexWeights(vertexWeights, influenceMap)
 
         skin.applyVertexWeights(remappedWeights)
+
+        return True
 
     def applySkin(self, mesh):
         """

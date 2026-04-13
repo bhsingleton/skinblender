@@ -172,6 +172,10 @@ class QSkinBlender(qsingletonwindow.QSingletonWindow):
         self.pasteSkinAction.setObjectName('pasteSkinAction')
         self.pasteSkinAction.triggered.connect(self.on_pasteSkinAction_triggered)
 
+        self.rigidVerticesAction = QtWidgets.QAction('Rigid Vertices', parent=self.editMenu)
+        self.rigidVerticesAction.setObjectName('rigidVerticesAction')
+        self.rigidVerticesAction.triggered.connect(self.on_rigidVerticesAction_triggered)
+
         self.relaxVerticesAction = QtWidgets.QAction('Relax Vertices', parent=self.editMenu)
         self.relaxVerticesAction.setObjectName('relaxVerticesAction')
         self.relaxVerticesAction.triggered.connect(self.on_relaxVerticesAction_triggered)
@@ -200,7 +204,7 @@ class QSkinBlender(qsingletonwindow.QSingletonWindow):
         self.editMenu.addSeparator()
         self.editMenu.addActions([self.copySkinAction, self.pasteSkinAction])
         self.editMenu.addSeparator()
-        self.editMenu.addAction(self.relaxVerticesAction)
+        self.editMenu.addActions([self.rigidVerticesAction, self.relaxVerticesAction])
         self.editMenu.addSeparator()
         self.editMenu.addActions([self.blendVerticesAction, self.blendBetweenVerticesAction, self.blendByDistanceAction])
         self.editMenu.addSeparator()
@@ -1554,6 +1558,17 @@ class QSkinBlender(qsingletonwindow.QSingletonWindow):
         self.invalidateWeights()
 
     @contextGuard
+    def rigidWeights(self):
+        """
+        Averages the selected vertex elements.
+
+        :rtype: None
+        """
+
+        self.skin.rigidVertices(self.selection())
+        self.invalidateWeights()
+
+    @contextGuard
     def selectAffectedVertices(self):
         """
         Selects the vertices associated with current weight table selection.
@@ -2075,6 +2090,17 @@ class QSkinBlender(qsingletonwindow.QSingletonWindow):
         """
 
         self.pasteWeights(average=True)
+
+    @QtCore.Slot(bool)
+    def on_rigidVerticesAction_triggered(self, checked=False):
+        """
+        Slot method for the `rigidVerticesAction` widget's `triggered` signal.
+
+        :type checked: bool
+        :rtype: None
+        """
+
+        self.rigidWeights()
 
     @QtCore.Slot(bool)
     def on_copySkinAction_triggered(self, checked=False):
